@@ -53,6 +53,12 @@ impl From<u32> for Color {
     }
 }
 
+impl From<(u8, u8, u8)> for Color {
+    fn from((r, g, b): (u8, u8, u8)) -> Self {
+        Self::rgb(r, g, b)
+    }
+}
+
 impl From<Color> for u32 {
     fn from(value: Color) -> Self {
         value.0
