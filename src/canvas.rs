@@ -59,6 +59,25 @@ impl Canvas {
         self.buffer.fill(raw_color);
     }
 
+    #[inline]
+    pub fn set_pixel(&mut self, x: i32, y: i32, color: impl Into<Color>) {
+        let (self_width, self_height) = self.dimensions_clamped_i32();
+
+        if 0 <= x && x < self_width && 0 <= y && y < self_height {
+            // SAFETY: idx is known to be positive and within bounds.
+            unsafe {
+                self.set_pixel_unchecked_raw_i32(x, y, u32::from(color.into()));
+            }
+        }
+    }
+
+    /// # Safety
+    /// x and y must be positive and smaller than canvas width and height respectively.
+    #[inline]
+    pub unsafe fn set_pixel_unchecked(&mut self, x: i32, y: i32, color: impl Into<Color>) {
+        self.set_pixel_unchecked_raw_i32(x, y, u32::from(color.into()));
+    }
+
     pub fn fill_rect(&mut self, x: i32, y: i32, w: i32, h: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
         let (from_x, to_x, from_y, to_y) = self.clamp_rect_i32(x, x + w, y, y + h);
