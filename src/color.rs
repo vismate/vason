@@ -83,6 +83,6 @@ mod tests {
     #[test]
     fn conversions() {
         assert_eq!(u32::from(Color::rgb(12, 1, 231)), 786_919);
-        assert_eq!(Color::from(786_919).to_rgb(), (12, 1, 231));
+        assert_eq!(Color::from(786_919u32).to_rgb(), (12, 1, 231));
     }
 }
