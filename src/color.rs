@@ -36,6 +36,11 @@ impl Color {
         (r, g, b)
     }
 
+    #[must_use]
+    pub const fn gray(c: u8) -> Self {
+        Self::rgb(c, c, c)
+    }
+
     // TODO: More color constants
     pub const BLACK: Self = Self::rgb(0, 0, 0);
     pub const WHITE: Self = Self::rgb(255, 255, 255);
@@ -56,6 +61,12 @@ impl From<u32> for Color {
 impl From<(u8, u8, u8)> for Color {
     fn from((r, g, b): (u8, u8, u8)) -> Self {
         Self::rgb(r, g, b)
+    }
+}
+
+impl From<u8> for Color {
+    fn from(value: u8) -> Self {
+        Self::gray(value)
     }
 }
 
