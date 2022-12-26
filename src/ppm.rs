@@ -17,7 +17,7 @@ pub fn encode_canvas(canvas: &Canvas, w: &mut dyn Write) -> Result<()> {
 /// # Errors
 ///
 /// This function will return an error if there was an i/o error whilest writing.
-pub fn encode_buffer(buffer: &[u32], width: u32, height: u32, w: &mut dyn Write) -> Result<()> {
+pub fn encode_buffer(buffer: &[u32], width: usize, height: usize, w: &mut dyn Write) -> Result<()> {
     writeln!(w, "P6 {width} {height} 255")?;
 
     for p in buffer {
