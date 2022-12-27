@@ -78,34 +78,40 @@ impl Canvas {
         self.set_pixel_unchecked_raw_i32(x, y, u32::from(color.into()));
     }
 
+    #[allow(clippy::cast_sign_loss)]
     pub fn fill_rect(&mut self, x: i32, y: i32, w: i32, h: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
         let (from_x, to_x, from_y, to_y) = self.clamp_rect_i32(x, x + w, y, y + h);
 
-        for j in from_y..to_y {
-            for i in from_x..to_x {
-                // SAFETY: idx is known to be positive and within bounds.
-                unsafe {
-                    self.set_pixel_unchecked_raw_i32(i, j, raw_color);
-                }
-            }
+        let offset = from_y as usize * self.width;
+        let mut from_idx = offset + from_x as usize;
+        let mut to_idx = offset + to_x as usize;
+
+        for _ in from_y..to_y {
+            self.buffer[from_idx..to_idx].fill(raw_color);
+            from_idx += self.width;
+            to_idx += self.width;
         }
     }
 
+    #[allow(clippy::cast_sign_loss)]
     pub fn fill_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
         let (from_x, to_x, from_y, to_y) = self.clamp_rect_i32(x - r, x + r, y - r, y + r);
 
+        let r2 = r * r;
         for j in from_y..to_y {
             let dy = j - y;
+            let dy2 = dy * dy;
 
+            let offset = j as usize * self.width;
             for i in from_x..to_x {
                 let dx = i - x;
 
-                if dx * dx + dy * dy <= r * r {
+                if dx * dx + dy2 <= r2 {
                     // SAFETY: idx is known to be positive and within bounds.
                     unsafe {
-                        self.set_pixel_unchecked_raw_i32(i, j, raw_color);
+                        *self.buffer.get_unchecked_mut(offset + i as usize) = raw_color;
                     }
                 }
             }
