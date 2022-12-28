@@ -118,80 +118,46 @@ impl Canvas {
         }
     }
 
-    pub fn line(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, color: impl Into<Color>) {
+    pub fn line(&mut self, mut x1: i32, mut y1: i32, x2: i32, y2: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
 
         let dx = x2 - x1;
+        let sx = dx.signum();
+        let dx = dx.abs();
+
         let dy = y2 - y1;
+        let sy = dy.signum();
+        let dy = -dy.abs();
+
+        let mut err = dx + dy;
 
         let (self_width, self_height) = self.dimensions_clamped_i32();
 
-        if dx == 0 && dy == 0 && 0 <= x1 && x1 < self_width && 0 <= y1 && y1 < self_height {
-            // SAFETY: We know the coordinates are within bounds.
-            unsafe {
-                self.set_pixel_unchecked_raw_i32(x1, y1, raw_color);
-            }
-            return;
-        }
-
-        if dx.abs() > dy.abs() {
-            let (mut x1, y1, mut x2, _y2) = if x1 > x2 {
-                (x2, y2, x1, y1)
-            } else {
-                (x1, y1, x2, y2)
-            };
-
-            if x1 > self_width || x2 < 0 {
-                return;
-            }
-
-            if x1 < 0 {
-                x1 = 0;
-            }
-            if x2 >= self_width {
-                x2 = self_width - 1;
-            }
-
-            for x in x1..=x2 {
-                let y = dy * (x - x1) / dx + y1;
-                if 0 <= y && y < self_height {
-                    // SAFETY: We know the coordinates are within bounds.
-                    unsafe {
-                        self.set_pixel_unchecked_raw_i32(x, y, raw_color);
-                    }
+        loop {
+            if 0 <= x1 && x1 < self_width && 0 <= y1 && y1 < self_height {
+                unsafe {
+                    self.set_pixel_unchecked_raw_i32(x1, y1, raw_color);
                 }
             }
-        } else {
-            let (x1, mut y1, _x2, mut y2) = if y1 > y2 {
-                (x2, y2, x1, y1)
-            } else {
-                (x1, y1, x2, y2)
-            };
 
-            if y1 > self_height || y2 < 0 {
-                return;
+            if x1 == x2 && y1 == y2 {
+                break;
             }
 
-            if y1 < 0 {
-                y1 = 0;
+            let e2 = 2 * err;
+            if e2 >= dy {
+                err += dy;
+                x1 += sx;
             }
-            if y2 >= self_height {
-                y2 = self_height - 1;
-            }
-
-            for y in y1..=y2 {
-                let x = dx * (y - y1) / dy + x1;
-                if 0 <= x && x < self_width {
-                    // SAFETY: We know the coordinates are within bounds.
-                    unsafe {
-                        self.set_pixel_unchecked_raw_i32(x, y, raw_color);
-                    }
-                }
+            if e2 <= dx {
+                err += dx;
+                y1 += sy;
             }
         }
     }
 
     #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+    #[inline]
     fn dimensions_clamped_i32(&self) -> (i32, i32) {
         let w = self.width.clamp(0, i32::MAX as usize) as i32;
         let h = self.height.clamp(0, i32::MAX as usize) as i32;
@@ -200,6 +166,7 @@ impl Canvas {
     }
 
     #[allow(clippy::similar_names)]
+    #[inline]
     fn clamp_rect_i32(&self, xmin: i32, xmax: i32, ymin: i32, ymax: i32) -> (i32, i32, i32, i32) {
         let (self_width, self_height) = self.dimensions_clamped_i32();
 
@@ -213,6 +180,7 @@ impl Canvas {
     }
 
     #[allow(clippy::cast_sign_loss)]
+    #[inline]
     unsafe fn set_pixel_unchecked_raw_i32(&mut self, x: i32, y: i32, raw_color: u32) {
         debug_assert!(x >= 0 && y >= 0);
         let idx = y as usize * self.width + x as usize;
