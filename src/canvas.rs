@@ -1,4 +1,4 @@
-use crate::Color;
+use crate::{Color, Pen};
 
 pub struct Canvas {
     buffer: Box<[u32]>,
@@ -51,6 +51,11 @@ impl Canvas {
     #[must_use]
     pub fn buffer_mut(&mut self) -> &mut [u32] {
         &mut self.buffer
+    }
+
+    #[must_use]
+    pub fn pen(&mut self) -> Pen<'_> {
+        Pen::new(self)
     }
 
     /// Clear the entire buffer with supplied color.
