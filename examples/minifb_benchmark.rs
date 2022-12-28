@@ -4,6 +4,7 @@ use vason::{Canvas, Color};
 const WIDTH: usize = 1366;
 const HEIGHT: usize = 768;
 
+//TODO: Create a better example/benchmark
 fn main() {
     let mut canvas = Canvas::new(WIDTH, HEIGHT);
 
@@ -20,6 +21,7 @@ fn main() {
     // Limit to max ~60 fps update rate
     window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
 
+    // TODO: Refactor these variable names
     let mut cx = 0;
     let mut ry = 0;
     let mut i = 0;
