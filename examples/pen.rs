@@ -1,5 +1,5 @@
 use std::fs::File;
-use vason::{ppm::encode_canvas, Canvas, Pen};
+use vason::{ppm::encode_canvas, Canvas, Color, Pen};
 
 fn tree(pen: &mut Pen, size: f32, depth: i32) {
     let state = pen.get_state();
@@ -19,6 +19,17 @@ fn tree(pen: &mut Pen, size: f32, depth: i32) {
     pen.turn_left(25.0).forward(size / 6.0).set_state(state);
 }
 
+fn sun(pen: &mut Pen, scale: f32) {
+    for _ in 0..18 {
+        pen.forward(0.5 * scale)
+            .turn_right(150.0)
+            .forward(0.6 * scale)
+            .turn_right(100.0)
+            .forward(0.3 * scale)
+            .turn_right(90.0);
+    }
+}
+
 fn main() {
     let mut canvas = Canvas::new(1024, 1024);
     canvas.clear((15, 15, 35));
@@ -26,6 +37,9 @@ fn main() {
 
     pen.set_position(512.0, 1024.0).set_direction(-90.0);
     tree(&mut pen, 650.0, 15);
+
+    pen.set_color(Color::YELLOW).set_position(80.0, 120.0);
+    sun(&mut pen, 175.0);
 
     let mut f = File::create("pen.ppm").expect("couldn't create file");
     encode_canvas(&canvas, &mut f).expect("couldn't write image to file");
