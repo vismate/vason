@@ -34,13 +34,19 @@ impl<'a> Pen<'a> {
         Self { canvas, state }
     }
 
-    pub fn set_state(&mut self, state: PenState) {
+    pub fn set_state(&mut self, state: PenState) -> &mut Self {
         self.state = state;
+        self
     }
 
     #[must_use]
     pub fn get_state(&self) -> PenState {
         self.state
+    }
+
+    pub fn reset(&mut self) -> &mut Self {
+        self.state = PenState::default();
+        self
     }
 
     pub fn set_position(&mut self, x: f32, y: f32) -> &mut Self {
