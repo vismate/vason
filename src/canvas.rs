@@ -94,26 +94,46 @@ impl Canvas {
         }
     }
 
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
     pub fn fill_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
-        let (from_x, to_x, from_y, to_y) = self.clamp_rect_i32(x - r, x + r, y - r, y + r);
 
-        let r2 = r * r;
-        for j in from_y..to_y {
-            let dy = j - y;
-            let dy2 = dy * dy;
+        let (self_width, self_height) = self.dimensions_clamped_i32();
 
-            let offset = j as usize * self.width;
-            for i in from_x..to_x {
-                let dx = i - x;
+        let mut r = r.abs();
+        let mut i = -r;
+        let mut j = 0;
+        let mut err = 2 - 2 * r;
+        loop {
+            let y1 = y - j;
+            let y2 = y + j;
+            //i is negative
+            let from_x = (x + i).clamp(0, self_width - 1);
+            let to_x = (x - i).clamp(from_x, self_width);
 
-                if dx * dx + dy2 <= r2 {
-                    // SAFETY: idx is known to be positive and within bounds.
-                    unsafe {
-                        *self.buffer.get_unchecked_mut(offset + i as usize) = raw_color;
-                    }
-                }
+            if 0 <= y1 && y1 < self_height {
+                let offset = y1 as usize * self.width;
+                let range = offset + from_x as usize..offset + to_x as usize;
+                self.buffer[range].fill(raw_color);
+            }
+
+            if 0 <= y2 && y2 < self_height {
+                let offset = y2 as usize * self.width;
+                let range = offset + from_x as usize..offset + to_x as usize;
+                self.buffer[range].fill(raw_color);
+            }
+            r = err;
+            if r <= j {
+                j += 1;
+                err += j * 2 + 1;
+            }
+            if r > i || err > j {
+                i += 1;
+                err += i * 2 + 1;
+            }
+
+            if i >= 0 {
+                break;
             }
         }
     }
@@ -158,13 +178,11 @@ impl Canvas {
         } else {
             let raw_color = u32::from(color.into());
 
-            let dx = x2 - x1;
-            let sx = dx.signum();
-            let dx = dx.abs();
+            let dx = (x2 - x1).abs();
+            let sx = if x1 < x2 { 1 } else { -1 };
 
-            let dy = y2 - y1;
-            let sy = dy.signum();
-            let dy = -dy.abs();
+            let dy = -(y2 - y1).abs();
+            let sy = if y1 < y2 { 1 } else { -1 };
 
             let mut err = dx + dy;
 
