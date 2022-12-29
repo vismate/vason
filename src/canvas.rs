@@ -118,40 +118,78 @@ impl Canvas {
         }
     }
 
-    pub fn line(&mut self, mut x1: i32, mut y1: i32, x2: i32, y2: i32, color: impl Into<Color>) {
+    #[allow(clippy::cast_sign_loss)]
+    pub fn hline(&mut self, y: i32, x1: i32, x2: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
 
-        let dx = x2 - x1;
-        let sx = dx.signum();
-        let dx = dx.abs();
-
-        let dy = y2 - y1;
-        let sy = dy.signum();
-        let dy = -dy.abs();
-
-        let mut err = dx + dy;
+        let (self_width, self_height) = self.dimensions_clamped_i32();
+        if 0 <= y && y < self_height {
+            let (x1, x2) = if x1 > x2 { (x2, x1) } else { (x1, x2) };
+            let from_x = x1.clamp(0, self_width - 1);
+            let to_x = x2.clamp(from_x, self_width);
+            let offset = y as usize * self.width;
+            let range = offset + from_x as usize..offset + to_x as usize;
+            self.buffer[range].fill(raw_color);
+        }
+    }
+    #[allow(clippy::cast_sign_loss)]
+    pub fn vline(&mut self, x: i32, y1: i32, y2: i32, color: impl Into<Color>) {
+        let raw_color = u32::from(color.into());
 
         let (self_width, self_height) = self.dimensions_clamped_i32();
+        if 0 <= x && x < self_width {
+            let (y1, y2) = if y1 > y2 { (y2, y1) } else { (y1, y2) };
 
-        loop {
-            if 0 <= x1 && x1 < self_width && 0 <= y1 && y1 < self_height {
-                unsafe {
-                    self.set_pixel_unchecked_raw_i32(x1, y1, raw_color);
+            let from_y = y1.clamp(0, self_height - 1);
+            let to_y = y2.clamp(from_y, self_height);
+
+            for y in from_y..to_y {
+                let offset = y as usize * self.width;
+                unsafe { *self.buffer.get_unchecked_mut(offset + x as usize) = raw_color }
+            }
+        }
+    }
+
+    pub fn line(&mut self, mut x1: i32, mut y1: i32, x2: i32, y2: i32, color: impl Into<Color>) {
+        if x1 == x2 {
+            self.vline(x1, y1, y2, color);
+        } else if y1 == y2 {
+            self.hline(y1, x1, x2, color);
+        } else {
+            let raw_color = u32::from(color.into());
+
+            let dx = x2 - x1;
+            let sx = dx.signum();
+            let dx = dx.abs();
+
+            let dy = y2 - y1;
+            let sy = dy.signum();
+            let dy = -dy.abs();
+
+            let mut err = dx + dy;
+
+            let (self_width, self_height) = self.dimensions_clamped_i32();
+
+            loop {
+                if 0 <= x1 && x1 < self_width && 0 <= y1 && y1 < self_height {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x1, y1, raw_color);
+                    }
                 }
-            }
 
-            if x1 == x2 && y1 == y2 {
-                break;
-            }
+                if x1 == x2 && y1 == y2 {
+                    break;
+                }
 
-            let e2 = 2 * err;
-            if e2 >= dy {
-                err += dy;
-                x1 += sx;
-            }
-            if e2 <= dx {
-                err += dx;
-                y1 += sy;
+                let e2 = 2 * err;
+                if e2 >= dy {
+                    err += dy;
+                    x1 += sx;
+                }
+                if e2 <= dx {
+                    err += dx;
+                    y1 += sy;
+                }
             }
         }
     }
