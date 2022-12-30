@@ -151,6 +151,85 @@ impl Canvas {
             }
         }
     }
+    #[allow(clippy::cast_sign_loss)]
+    pub fn thick_outline_rect(
+        &mut self,
+        x: i32,
+        y: i32,
+        w: i32,
+        h: i32,
+        thickness: i32,
+        color: impl Into<Color>,
+    ) {
+        // consistency with fill_rect
+        if w <= 0 || h <= 0 || thickness <= 0 {
+            return;
+        } else if thickness == 1 {
+            self.outline_rect(x, y, w, h, color);
+            return;
+        }
+
+        let raw_color = u32::from(color.into());
+
+        let x1 = x;
+        let x2 = x + w;
+        let y1 = y;
+        let y2 = y + h;
+
+        let half_thickness = thickness / 2;
+
+        if x2 + half_thickness >= 0 && y1 - half_thickness < self.clamped_height {
+            let from_x = (x1 - half_thickness).clamp(0, self.clamped_width - 1) as usize;
+            let to_x = (x2 + half_thickness).min(self.clamped_width) as usize;
+
+            if 0 <= y1 + half_thickness {
+                for j in
+                    (y1 - half_thickness).max(0)..(y1 + half_thickness).min(self.clamped_height - 1)
+                {
+                    let offset = j as usize * self.width;
+                    self.buffer[offset + from_x..offset + to_x].fill(raw_color);
+                }
+            }
+
+            if 0 <= y2 + half_thickness && y2 - half_thickness < self.clamped_height {
+                for j in
+                    (y2 - half_thickness).max(0)..(y2 + half_thickness).min(self.clamped_height - 1)
+                {
+                    let offset = j as usize * self.width;
+                    self.buffer[offset + from_x..offset + to_x].fill(raw_color);
+                }
+            }
+        }
+
+        if y2 + half_thickness >= 0 && x1 - half_thickness < self.clamped_width {
+            let from_y = y1.clamp(0, self.clamped_height - 1);
+            let to_y = y2.min(self.clamped_height);
+
+            if 0 <= x1 + half_thickness {
+                for j in from_y..to_y {
+                    for i in (x1 - half_thickness).max(0)
+                        ..(x1 + half_thickness).min(self.clamped_width - 1)
+                    {
+                        unsafe {
+                            self.set_pixel_unchecked_raw_i32(i, j, raw_color);
+                        }
+                    }
+                }
+            }
+
+            if 0 <= x2 + half_thickness && x2 - half_thickness < self.clamped_width {
+                for j in from_y..to_y {
+                    for i in (x2 - half_thickness).max(0)
+                        ..(x2 + half_thickness).min(self.clamped_width - 1)
+                    {
+                        unsafe {
+                            self.set_pixel_unchecked_raw_i32(i, j, raw_color);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
     pub fn fill_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
