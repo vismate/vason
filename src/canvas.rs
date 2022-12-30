@@ -378,6 +378,34 @@ impl Canvas {
         }
     }
 
+    #[inline]
+    pub fn thick_hline(
+        &mut self,
+        y: i32,
+        x1: i32,
+        x2: i32,
+        thickness: i32,
+        color: impl Into<Color>,
+    ) {
+        let thickness = thickness.max(0);
+        let (x1, x2) = if x1 > x2 { (x2, x1) } else { (x1, x2) };
+        self.fill_rect(x1, y + thickness / 2, x2 - x1, thickness, color);
+    }
+
+    #[inline]
+    pub fn thick_vline(
+        &mut self,
+        x: i32,
+        y1: i32,
+        y2: i32,
+        thickness: i32,
+        color: impl Into<Color>,
+    ) {
+        let thickness = thickness.max(0);
+        let (y1, y2) = if y1 > y2 { (y2, y1) } else { (y1, y2) };
+        self.fill_rect(x - thickness / 2, y1, thickness, y2 - y1, color);
+    }
+
     pub fn line(&mut self, mut x1: i32, mut y1: i32, x2: i32, y2: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
 
