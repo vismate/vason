@@ -5,7 +5,7 @@
 pub struct Color(pub u32);
 
 impl Color {
-    /// Creates a color from r, g and b values.
+    /// Creates a [`Color`] from r, g and b values.
     ///
     /// # Examples
     ///
