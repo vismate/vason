@@ -101,6 +101,57 @@ impl Canvas {
         }
     }
 
+    #[allow(clippy::cast_sign_loss)]
+    pub fn outline_rect(&mut self, x: i32, y: i32, w: i32, h: i32, color: impl Into<Color>) {
+        // consistency with fill_rect
+        if w <= 0 || h <= 0 {
+            return;
+        }
+
+        let raw_color = u32::from(color.into());
+
+        let x1 = x;
+        let x2 = x + w;
+        let y1 = y;
+        let y2 = y + h;
+
+        if x2 >= 0 && y1 < self.clamped_height {
+            let from_x = x1.clamp(0, self.clamped_width - 1) as usize;
+            let to_x = x2.min(self.clamped_width) as usize;
+
+            if 0 <= y1 {
+                let offset = y1 as usize * self.width;
+                self.buffer[offset + from_x..offset + to_x].fill(raw_color);
+            }
+
+            if 0 <= y2 && y2 < self.clamped_height {
+                let offset = y2 as usize * self.width;
+                self.buffer[offset + from_x..offset + to_x].fill(raw_color);
+            }
+        }
+
+        if y2 >= 0 && x1 < self.clamped_width {
+            let from_y = y1.clamp(0, self.clamped_height - 1);
+            let to_y = y2.min(self.clamped_height);
+
+            if 0 <= x1 {
+                for j in from_y..to_y {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x1, j, raw_color);
+                    }
+                }
+            }
+
+            if 0 <= x2 && x2 < self.clamped_width {
+                for j in from_y..to_y {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x2, j, raw_color);
+                    }
+                }
+            }
+        }
+    }
+
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
     pub fn fill_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
@@ -349,6 +400,7 @@ impl Canvas {
     }
 
     #[allow(clippy::cast_sign_loss)]
+    #[inline]
     pub fn hline(&mut self, y: i32, x1: i32, x2: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
 
@@ -362,6 +414,7 @@ impl Canvas {
         }
     }
     #[allow(clippy::cast_sign_loss)]
+    #[inline]
     pub fn vline(&mut self, x: i32, y1: i32, y2: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
 
@@ -372,8 +425,7 @@ impl Canvas {
             let to_y = y2.clamp(from_y, self.clamped_height);
 
             for y in from_y..to_y {
-                let offset = y as usize * self.width;
-                unsafe { *self.buffer.get_unchecked_mut(offset + x as usize) = raw_color }
+                unsafe { self.set_pixel_unchecked_raw_i32(x, y, raw_color) }
             }
         }
     }
