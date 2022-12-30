@@ -11,6 +11,8 @@ rust-version = "1.58.1"
 keywords = ["graphics", "rasterizing", "framebuffer", "rendering", "drawing"]
 categories = ["graphics"]
 
+exclude = [".github/*"]
+
 [dependencies]
 
 [dev-dependencies]
