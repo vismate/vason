@@ -199,6 +199,73 @@ impl Canvas {
         }
     }
 
+    #[allow(clippy::many_single_char_names, clippy::cast_sign_loss)]
+    pub fn fill_ellipse(&mut self, x: i32, y: i32, a: i32, b: i32, color: impl Into<Color>) {
+        let raw_color = u32::from(color.into());
+        let a = a.abs();
+        let b = b.abs();
+
+        let mut i = -a;
+        let mut j = 0;
+
+        // change to larger integers to avoid overflow.
+        let b2 = i64::from(b) * i64::from(b);
+        let a2 = i64::from(a) * i64::from(a);
+        let mut err = i64::from(i) * (2 * b2 + i64::from(i)) + b2;
+
+        loop {
+            let y1 = y - j;
+            let y2 = y + j;
+            //i is non-positive
+            let from_x = (x + i).clamp(0, self.clamped_width - 1);
+            let to_x = (x - i).clamp(from_x, self.clamped_width);
+
+            if 0 <= y1 && y1 < self.clamped_height {
+                let offset = y1 as usize * self.width;
+                let range = offset + from_x as usize..offset + to_x as usize;
+                self.buffer[range].fill(raw_color);
+            }
+
+            if 0 <= y2 && y2 < self.clamped_height {
+                let offset = y2 as usize * self.width;
+                let range = offset + from_x as usize..offset + to_x as usize;
+                self.buffer[range].fill(raw_color);
+            }
+
+            let e2 = 2 * err;
+            if e2 >= i64::from(i * 2 + 1) * b2 {
+                i += 1;
+                err += i64::from(i * 2 + 1) * b2;
+            }
+
+            if e2 <= i64::from(j * 2 + 1) * a2 {
+                j += 1;
+                err += i64::from(j * 2 + 1) * a2;
+            }
+
+            if i > 0 {
+                break;
+            }
+        }
+
+        while j < b {
+            j += 1;
+            if 0 <= x && x < self.clamped_width {
+                let y1 = y + j;
+                let y2 = y - j;
+                if 0 <= y1 && y1 < self.clamped_height {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x, y1, raw_color);
+                    }
+                }
+                if 0 <= y2 && y2 < self.clamped_height {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x, y2, raw_color);
+                    }
+                }
+            }
+        }
+    }
     #[allow(clippy::many_single_char_names)]
     pub fn outline_ellipse(&mut self, x: i32, y: i32, a: i32, b: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
