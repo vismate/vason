@@ -9,6 +9,7 @@ pub struct Canvas {
 }
 
 impl Canvas {
+    /// Creates a new [`Canvas`] with giver width and height.
     #[must_use]
     pub fn new(width: usize, height: usize) -> Self {
         match Self::from_buffer(vec![0; width * height].into_boxed_slice(), width, height) {
@@ -42,21 +43,25 @@ impl Canvas {
         })
     }
 
+    /// Returns the width of this [`Canvas`].
     #[must_use]
     pub fn width(&self) -> usize {
         self.width
     }
 
+    /// Returns the height of this [`Canvas`].
     #[must_use]
     pub fn height(&self) -> usize {
         self.height
     }
 
+    /// Returns a reference to the buffer of this [`Canvas`].
     #[must_use]
     pub fn buffer(&self) -> &[u32] {
         &self.buffer
     }
 
+    /// Returns a mutable reference to the buffer of this [`Canvas`].
     #[must_use]
     pub fn buffer_mut(&mut self) -> &mut [u32] {
         &mut self.buffer
@@ -68,6 +73,7 @@ impl Canvas {
         self.buffer.fill(raw_color);
     }
 
+    /// Sets the pixel at (x, y) of this [`Canvas`] to supplied color.
     #[inline]
     pub fn set_pixel(&mut self, x: i32, y: i32, color: impl Into<Color>) {
         if 0 <= x && x < self.clamped_width && 0 <= y && y < self.clamped_height {
@@ -78,6 +84,7 @@ impl Canvas {
         }
     }
 
+    /// Sets the pixel at (x, y) of this [`Canvas`] to supplied color.
     /// # Safety
     /// x and y must be positive and smaller than canvas width and height respectively.
     #[inline]
@@ -85,6 +92,13 @@ impl Canvas {
         self.set_pixel_unchecked_raw_i32(x, y, u32::from(color.into()));
     }
 
+    /// Fills a rectangle shaped region in this [`Canvas`]. If width or height is <= 0 nothing is drawn.
+    /// Renders the outline of a rectangle shaped region with a given thickness in this [`Canvas`]. If the width, height or thickness is <= 0 nothing is drawn.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.fill_rect(3, 3, 7, 7, Color::RED);
+    /// ```
     #[allow(clippy::cast_sign_loss)]
     pub fn fill_rect(&mut self, x: i32, y: i32, w: i32, h: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
@@ -101,6 +115,13 @@ impl Canvas {
         }
     }
 
+    /// Renders the outline of a rectangle shaped region in this [`Canvas`]. If width or height is <= 0 nothing is drawn.
+    /// Renders the outline of a rectangle shaped region with a given thickness in this [`Canvas`]. If the width, height or thickness is <= 0 nothing is drawn.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.outline_rect(3, 3, 7, 7, Color::RED);
+    /// ```
     #[allow(clippy::cast_sign_loss)]
     pub fn outline_rect(&mut self, x: i32, y: i32, w: i32, h: i32, color: impl Into<Color>) {
         // consistency with fill_rect
@@ -151,6 +172,13 @@ impl Canvas {
             }
         }
     }
+
+    /// Renders the outline of a rectangle shaped region with a given thickness in this [`Canvas`]. If the width, height or thickness is <= 0 nothing is drawn.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.thick_outline_rect(3, 3, 7, 7, 2, Color::RED);
+    /// ```
     #[allow(clippy::cast_sign_loss)]
     pub fn thick_outline_rect(
         &mut self,
@@ -231,6 +259,12 @@ impl Canvas {
         }
     }
 
+    /// Fills a circle shaped region in this [`Canvas`]. The radius must be positive, but uses the absoulte value otherwise.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.fill_circle(8, 8, 4, Color::GREEN);
+    /// ```
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
     pub fn fill_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
@@ -272,6 +306,13 @@ impl Canvas {
             }
         }
     }
+
+    /// Renders the outline of a circle shaped region in this [`Canvas`]. The radius must be positive, but uses the absoulte value otherwise.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.outline_circle(8, 8, 8, Color::YELLOW);
+    /// ```
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
     pub fn outline_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
@@ -329,6 +370,12 @@ impl Canvas {
         }
     }
 
+    /// Fills an ellipse shaped region in this [`Canvas`]. The radii must be positive, but uses the absoulte value otherwise.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.fill_ellipse(8, 8, 8, 4, Color::RED);
+    /// ```
     #[allow(clippy::many_single_char_names, clippy::cast_sign_loss)]
     pub fn fill_ellipse(&mut self, x: i32, y: i32, a: i32, b: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
@@ -396,6 +443,13 @@ impl Canvas {
             }
         }
     }
+
+    /// Renders the outline of an ellipse shaped region in this [`Canvas`]. The radii must be positive, but uses the absoulte value otherwise.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.outline_ellipse(8, 8, 8, 4, Color::RED);
+    /// ```
     #[allow(clippy::many_single_char_names)]
     pub fn outline_ellipse(&mut self, x: i32, y: i32, a: i32, b: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
@@ -478,6 +532,12 @@ impl Canvas {
         }
     }
 
+    /// Renders a horizontal line. Should be preferred when explicitly drawing horizontal lines.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.hline(10, 0, 16, Color::RED);
+    /// ```
     #[allow(clippy::cast_sign_loss)]
     #[inline]
     pub fn hline(&mut self, y: i32, x1: i32, x2: i32, color: impl Into<Color>) {
@@ -492,6 +552,13 @@ impl Canvas {
             self.buffer[range].fill(raw_color);
         }
     }
+
+    /// Renders a vertical line. Should be preferred when explicitly drawing vertical lines.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.vline(10, 0, 16, Color::RED);
+    /// ```
     #[allow(clippy::cast_sign_loss)]
     #[inline]
     pub fn vline(&mut self, x: i32, y1: i32, y2: i32, color: impl Into<Color>) {
@@ -509,6 +576,12 @@ impl Canvas {
         }
     }
 
+    /// Renders a horizontal line with thickness. Should be preferred when explicitly drawing thick horizontal lines.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.thick_hline(10, 0, 16, 2, Color::RED);
+    /// ```
     #[inline]
     pub fn thick_hline(
         &mut self,
@@ -523,6 +596,11 @@ impl Canvas {
         self.fill_rect(x1, y + thickness / 2, x2 - x1, thickness, color);
     }
 
+    /// Renders a vertical line with thickness. Should be preferred when explicitly drawing thick vertical lines.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.thick_vline(10, 0, 16, 2, Color::RED);
     #[inline]
     pub fn thick_vline(
         &mut self,
@@ -537,6 +615,13 @@ impl Canvas {
         self.fill_rect(x - thickness / 2, y1, thickness, y2 - y1, color);
     }
 
+    /// Renders a line. Should be preferred when mostly drawing non axis-aligned lines.
+    /// If there is a substantial chance of drawing axis-aligned (hline or vline) consider using [`line_maybe_axis_aligned`](struct.Canvas.html#method.line_maybe_axis_aligned) instead
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.line(10,2,10,12, Color::RED);
+    /// ```
     pub fn line(&mut self, mut x1: i32, mut y1: i32, x2: i32, y2: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
 
@@ -571,8 +656,18 @@ impl Canvas {
         }
     }
 
+    /// Renders a line. Should be preferred when mostly drawing axis-aligned lines.
+    /// If it is not very likely you'll draw a lot of axis-aligned lines prefer [`line`](struct.Canvas.html#method.line) instead.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// // axis aligned
+    /// canvas.line_maybe_axis_aligned(10,2,10,12, Color::RED);
+    /// // not axis aligned
+    /// canvas.line_maybe_axis_aligned(12, 4, 5, 7, Color::BLUE);
+    /// ```
     #[inline]
-    pub fn line_maybe_straight(
+    pub fn line_maybe_axis_aligned(
         &mut self,
         x1: i32,
         y1: i32,

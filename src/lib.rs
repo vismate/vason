@@ -1,5 +1,3 @@
-#![feature(iter_array_chunks)]
-
 pub mod canvas;
 pub mod color;
 pub mod ppm;
