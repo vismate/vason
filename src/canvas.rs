@@ -142,6 +142,62 @@ impl Canvas {
             }
         }
     }
+    #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
+    pub fn outline_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
+        let raw_color = u32::from(color.into());
+
+        let mut r = r.abs();
+        let mut i = -r;
+        let mut j = 0;
+        let mut err = 2 - 2 * r;
+        loop {
+            let x1 = x - i;
+            let x2 = x + i;
+            let y1 = y - j;
+            let y2 = y + j;
+
+            // TODO: benchmark this with precise tooling against just using self.set_pixel()
+            // flamegraph shows a siginificant difference, but I'm not convinced.
+            if 0 <= x1 && x1 < self.clamped_width {
+                if 0 <= y1 && y1 < self.clamped_height {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x1, y1, raw_color);
+                    }
+                }
+                if 0 <= y2 && y2 < self.clamped_height {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x1, y2, raw_color);
+                    }
+                }
+            }
+            if 0 <= x2 && x2 < self.clamped_width {
+                if 0 <= y1 && y1 < self.clamped_height {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x2, y1, raw_color);
+                    }
+                }
+                if 0 <= y2 && y2 < self.clamped_height {
+                    unsafe {
+                        self.set_pixel_unchecked_raw_i32(x2, y2, raw_color);
+                    }
+                }
+            }
+
+            r = err;
+            if r <= j {
+                j += 1;
+                err += j * 2 + 1;
+            }
+            if r > i || err > j {
+                i += 1;
+                err += i * 2 + 1;
+            }
+
+            if i >= 0 {
+                break;
+            }
+        }
+    }
 
     #[allow(clippy::cast_sign_loss)]
     pub fn hline(&mut self, y: i32, x1: i32, x2: i32, color: impl Into<Color>) {
