@@ -17,7 +17,7 @@ The crate also works well together with minifb, thus you can even use it for sma
 - [x] Save buffer to a primitive image format (ppm)
 - [ ] more shapes:
   - [ ] fill_triangle, outline_triangle, thick_outline_triangle
-  - [ ] thick_outline_circle
+  - [x] thick_outline_circle
   - [ ] thick_outline_ellipse
   - [ ] thick_line
   - [ ] bezier_curve
