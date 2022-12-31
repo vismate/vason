@@ -130,13 +130,14 @@ impl Canvas {
         let raw_color = u32::from(color.into());
 
         let x1 = x;
-        let x2 = x + w;
+        let x2 = x + w - 1;
         let y1 = y;
-        let y2 = y + h;
+        let y2 = y + h - 1;
 
         if x2 >= 0 && y1 < self.clamped_height {
             let from_x = x1.clamp(0, self.clamped_width - 1) as usize;
-            let to_x = x2.min(self.clamped_width) as usize;
+            // draw the last pixel
+            let to_x = (x2 + 1).min(self.clamped_width) as usize;
 
             if 0 <= y1 {
                 let offset = y1 as usize * self.width;
@@ -210,7 +211,7 @@ impl Canvas {
 
             if 0 <= y1 + half_thickness {
                 for j in
-                    (y1 - half_thickness).max(0)..(y1 + half_thickness).min(self.clamped_height - 1)
+                    (y1 - half_thickness).max(0)..(y1 + half_thickness).min(self.clamped_height)
                 {
                     let offset = j as usize * self.width;
                     self.buffer[offset + from_x..offset + to_x].fill(raw_color);
@@ -219,7 +220,7 @@ impl Canvas {
 
             if 0 <= y2 + half_thickness && y2 - half_thickness < self.clamped_height {
                 for j in
-                    (y2 - half_thickness).max(0)..(y2 + half_thickness).min(self.clamped_height - 1)
+                    (y2 - half_thickness).max(0)..(y2 + half_thickness).min(self.clamped_height)
                 {
                     let offset = j as usize * self.width;
                     self.buffer[offset + from_x..offset + to_x].fill(raw_color);
@@ -233,8 +234,8 @@ impl Canvas {
 
             if 0 <= x1 + half_thickness {
                 for j in from_y..to_y {
-                    for i in (x1 - half_thickness).max(0)
-                        ..(x1 + half_thickness).min(self.clamped_width - 1)
+                    for i in
+                        (x1 - half_thickness).max(0)..(x1 + half_thickness).min(self.clamped_width)
                     {
                         unsafe {
                             self.set_pixel_unchecked_raw_i32(i, j, raw_color);
@@ -245,8 +246,8 @@ impl Canvas {
 
             if 0 <= x2 + half_thickness && x2 - half_thickness < self.clamped_width {
                 for j in from_y..to_y {
-                    for i in (x2 - half_thickness).max(0)
-                        ..(x2 + half_thickness).min(self.clamped_width - 1)
+                    for i in
+                        (x2 - half_thickness).max(0)..(x2 + half_thickness).min(self.clamped_width)
                     {
                         unsafe {
                             self.set_pixel_unchecked_raw_i32(i, j, raw_color);
