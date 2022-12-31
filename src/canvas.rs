@@ -368,6 +368,74 @@ impl Canvas {
         }
     }
 
+    /// Renders the outline of a circle shaped region with a given thickness in this [`Canvas`]. The radius must be positive, but uses the absoulte value otherwise.
+    /// The stroke witdth grows symmetrically (inwards and outwards), that is the supplied radius will be the center of the stroke.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(16,16);
+    /// canvas.thick_outline_circle(4, 8, 8, 2, Color::Cyan);
+    /// ```
+    pub fn thick_outline_circle(
+        &mut self,
+        x: i32,
+        y: i32,
+        r: i32,
+        thickness: i32,
+        color: impl Into<Color>,
+    ) {
+        if thickness <= 0 {
+            return;
+        } else if thickness == 1 {
+            self.outline_circle(x, y, r, color);
+            return;
+        }
+
+        let raw_color = u32::from(color.into());
+
+        let r = r.abs();
+
+        let half_thickness = thickness / 2;
+
+        let ro = r + half_thickness;
+        let ri = ro - thickness + 1;
+
+        let mut xo = ro;
+        let mut xi = ri;
+        let mut j = 0;
+        let mut erro = 1 - xo;
+        let mut erri = 1 - xi;
+
+        while xo >= j {
+            // TODO: inline these calls manually to do fewer checks.
+            self.hline(y + j, x + xi, x + xo, raw_color);
+            self.vline(x + j, y + xi, y + xo, raw_color);
+            self.hline(y + j, x - xo, x - xi, raw_color);
+            self.vline(x - j, y + xi, y + xo, raw_color);
+            self.hline(y - j, x - xo, x - xi, raw_color);
+            self.vline(x - j, y - xo, y - xi, raw_color);
+            self.hline(y - j, x + xi, x + xo, raw_color);
+            self.vline(x + j, y - xo, y - xi, raw_color);
+
+            j += 1;
+
+            if erro < 0 {
+                erro += 2 * j + 1;
+            } else {
+                xo -= 1;
+                erro += 2 * (j - xo) + 1;
+            }
+
+            if j > ri {
+                xi = j;
+            } else if erri < 0 {
+                erri += 2 * j + 1;
+            } else {
+                xi -= 1;
+                erri += 2 * (j - xi) + 1;
+            }
+        }
+    }
+
     /// Fills an ellipse shaped region in this [`Canvas`]. The radii must be positive, but uses the absoulte value otherwise.
     /// ``` rust
     /// use vason::{Canvas, Color};
