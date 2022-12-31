@@ -1,5 +1,15 @@
 use crate::{Canvas, Color};
 
+// TODO: Flood fill, pen width
+
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Copy)]
+pub enum PenBound {
+    Unbounded,
+    Clamp,
+    Wrap,
+}
+
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy)]
 pub struct PenState {
@@ -7,6 +17,7 @@ pub struct PenState {
     pub direction: f32,
     pub color: Color,
     pub is_down: bool,
+    pub bound: PenBound,
 }
 
 impl Default for PenState {
@@ -16,6 +27,7 @@ impl Default for PenState {
             direction: 0.0,
             color: Color::WHITE,
             is_down: true,
+            bound: PenBound::Unbounded,
         }
     }
 }
@@ -39,9 +51,31 @@ impl<'a> Pen<'a> {
         self
     }
 
+    pub fn set_bound(&mut self, bound: PenBound) -> &mut Self {
+        self.state.bound = bound;
+        let (x, y) = self.state.position;
+        self.state.position = self.bound_pos(x, y);
+        self
+    }
+
+    #[must_use]
+    pub fn get_bound(&self) -> PenBound {
+        self.state.bound
+    }
+
     #[must_use]
     pub fn get_state(&self) -> PenState {
         self.state
+    }
+
+    #[must_use]
+    pub fn canvas(&self) -> &Canvas {
+        self.canvas
+    }
+
+    #[must_use]
+    pub fn canvas_mut(&mut self) -> &mut Canvas {
+        self.canvas
     }
 
     pub fn reset(&mut self) -> &mut Self {
@@ -61,7 +95,7 @@ impl<'a> Pen<'a> {
 
     pub fn forward(&mut self, amount: f32) -> &mut Self {
         let (dy, dx) = self.state.direction.sin_cos();
-        let new_pos = (
+        let new_pos = self.bound_pos(
             self.state.position.0 + dx * amount,
             self.state.position.1 + dy * amount,
         );
@@ -71,6 +105,7 @@ impl<'a> Pen<'a> {
         // the value is clamped to said range.
         // This can result in a vastly different line (of a different slope)
         // TODO: mitigate the edge case above
+        // TODO: use line_maybe_axis_aligned once available after a merge
         #[allow(clippy::cast_possible_truncation)]
         if self.state.is_down {
             self.canvas.line(
@@ -154,5 +189,41 @@ impl<'a> Pen<'a> {
     pub fn pen_toggle(&mut self) -> &mut Self {
         self.state.is_down = !self.state.is_down;
         self
+    }
+
+    pub fn repeat(&mut self, times: usize, mut f: impl FnMut(&mut Self)) -> &mut Self {
+        for _ in 0..times {
+            f(self);
+        }
+
+        self
+    }
+
+    #[allow(clippy::cast_precision_loss)]
+    fn bound_pos(&self, x: f32, y: f32) -> (f32, f32) {
+        match self.state.bound {
+            PenBound::Clamp => (
+                x.clamp(0.0, self.canvas.width() as f32 - 1.0),
+                y.clamp(0.0, self.canvas.height() as f32 - 1.0),
+            ),
+            PenBound::Wrap => {
+                let nx = x % self.canvas.width() as f32;
+                let ny = y % self.canvas.height() as f32;
+
+                let nx = if nx.is_sign_negative() {
+                    self.canvas.width() as f32 + nx
+                } else {
+                    nx
+                };
+                let ny = if ny.is_sign_negative() {
+                    self.canvas.height() as f32 + ny
+                } else {
+                    ny
+                };
+
+                (nx, ny)
+            }
+            PenBound::Unbounded => (x, y),
+        }
     }
 }
