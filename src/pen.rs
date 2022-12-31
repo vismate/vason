@@ -56,6 +56,16 @@ impl<'a> Pen<'a> {
         self
     }
 
+    #[allow(clippy::cast_precision_loss)]
+    pub fn set_bounds_to_canvas(&mut self) -> &mut Self {
+        self.set_bounds(
+            0.0,
+            self.canvas.width() as f32,
+            0.0,
+            self.canvas.height() as f32,
+        )
+    }
+
     #[must_use]
     pub fn get_bounds(&self) -> Option<(f32, f32, f32, f32)> {
         self.state.bounds
