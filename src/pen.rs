@@ -89,8 +89,32 @@ impl<'a> Pen<'a> {
         self
     }
 
+    /// Set the pen position without drawing.
+    /// In case you wish to draw a line when moving to new position use [`set_position_draw`](struct.Pen.html#method.set_position_draw)
     pub fn set_position(&mut self, x: f32, y: f32) -> &mut Self {
         self.state.position = self.bound_pos(x, y);
+        self
+    }
+
+    /// Set the pen position and draw a line from old position to the new one.
+    /// Warning: it will only draw if the pen is down.
+    pub fn set_position_draw(&mut self, x: f32, y: f32) -> &mut Self {
+        let (x, y) = self.bound_pos(x, y);
+
+        // TODO: use line_maybe_axis_aligned once available after a merge
+        #[allow(clippy::cast_possible_truncation)]
+        if self.state.is_down {
+            self.canvas.line(
+                self.state.position.0 as i32,
+                self.state.position.1 as i32,
+                x as i32,
+                y as i32,
+                self.state.color,
+            );
+        }
+
+        self.state.position = (x, y);
+
         self
     }
 
