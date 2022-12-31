@@ -50,8 +50,8 @@ impl<'a> Pen<'a> {
     }
 
     #[allow(clippy::similar_names)]
-    pub fn set_bounds(&mut self, xmin: f32, ymin: f32, xmax: f32, ymax: f32) -> &mut Self {
-        self.state.bounds = Some((xmin, ymin, xmax, ymax));
+    pub fn set_bounds(&mut self, xmin: f32, xmax: f32, ymin: f32, ymax: f32) -> &mut Self {
+        self.state.bounds = Some((xmin, xmax, ymin, ymax));
         self.bound_self();
         self
     }
@@ -60,9 +60,9 @@ impl<'a> Pen<'a> {
     pub fn set_bounds_to_canvas(&mut self) -> &mut Self {
         self.set_bounds(
             0.0,
-            self.canvas.width() as f32,
+            (self.canvas.width() - 1) as f32,
             0.0,
-            self.canvas.height() as f32,
+            (self.canvas.height() - 1) as f32,
         )
     }
 
@@ -201,7 +201,7 @@ impl<'a> Pen<'a> {
     #[allow(clippy::similar_names)]
     fn bound_pos(&self, x: f32, y: f32) -> (f32, f32) {
         match self.state.bounds {
-            Some((xmin, ymin, xmax, ymax)) => (x.clamp(xmin, xmax), y.clamp(ymin, ymax)),
+            Some((xmin, xmax, ymin, ymax)) => (x.clamp(xmin, xmax), y.clamp(ymin, ymax)),
             None => (x, y),
         }
     }
