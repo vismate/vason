@@ -1,15 +1,5 @@
 use crate::{Canvas, Color};
 
-// TODO: Flood fill, pen width
-
-#[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Copy)]
-pub enum PenBound {
-    Unbounded,
-    Clamp,
-    Wrap,
-}
-
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy)]
 pub struct PenState {
@@ -17,7 +7,7 @@ pub struct PenState {
     pub direction: f32,
     pub color: Color,
     pub is_down: bool,
-    pub bound: PenBound,
+    pub bounds: Option<(f32, f32, f32, f32)>,
 }
 
 impl Default for PenState {
@@ -27,7 +17,7 @@ impl Default for PenState {
             direction: 0.0,
             color: Color::WHITE,
             is_down: true,
-            bound: PenBound::Unbounded,
+            bounds: None,
         }
     }
 }
@@ -43,29 +33,32 @@ impl<'a> Pen<'a> {
     }
 
     pub fn with_state(canvas: &'a mut Canvas, state: PenState) -> Self {
-        Self { canvas, state }
+        let mut s = Self { canvas, state };
+        s.bound_self();
+        s
     }
 
     pub fn set_state(&mut self, state: PenState) -> &mut Self {
         self.state = state;
+        self.bound_self();
         self
-    }
-
-    pub fn set_bound(&mut self, bound: PenBound) -> &mut Self {
-        self.state.bound = bound;
-        let (x, y) = self.state.position;
-        self.state.position = self.bound_pos(x, y);
-        self
-    }
-
-    #[must_use]
-    pub fn get_bound(&self) -> PenBound {
-        self.state.bound
     }
 
     #[must_use]
     pub fn get_state(&self) -> PenState {
         self.state
+    }
+
+    #[allow(clippy::similar_names)]
+    pub fn set_bounds(&mut self, xmin: f32, ymin: f32, xmax: f32, ymax: f32) -> &mut Self {
+        self.state.bounds = Some((xmin, ymin, xmax, ymax));
+        self.bound_self();
+        self
+    }
+
+    #[must_use]
+    pub fn get_bounds(&self) -> Option<(f32, f32, f32, f32)> {
+        self.state.bounds
     }
 
     #[must_use]
@@ -80,11 +73,12 @@ impl<'a> Pen<'a> {
 
     pub fn reset(&mut self) -> &mut Self {
         self.state = PenState::default();
+        self.bound_self();
         self
     }
 
     pub fn set_position(&mut self, x: f32, y: f32) -> &mut Self {
-        self.state.position = (x, y);
+        self.state.position = self.bound_pos(x, y);
         self
     }
 
@@ -100,11 +94,6 @@ impl<'a> Pen<'a> {
             self.state.position.1 + dy * amount,
         );
 
-        // We can allow truncation, this is a safe behaviour
-        // Edge case: whenever we have a position outside the range of an i32,
-        // the value is clamped to said range.
-        // This can result in a vastly different line (of a different slope)
-        // TODO: mitigate the edge case above
         // TODO: use line_maybe_axis_aligned once available after a merge
         #[allow(clippy::cast_possible_truncation)]
         if self.state.is_down {
@@ -199,31 +188,16 @@ impl<'a> Pen<'a> {
         self
     }
 
-    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::similar_names)]
     fn bound_pos(&self, x: f32, y: f32) -> (f32, f32) {
-        match self.state.bound {
-            PenBound::Clamp => (
-                x.clamp(0.0, self.canvas.width() as f32 - 1.0),
-                y.clamp(0.0, self.canvas.height() as f32 - 1.0),
-            ),
-            PenBound::Wrap => {
-                let nx = x % self.canvas.width() as f32;
-                let ny = y % self.canvas.height() as f32;
-
-                let nx = if nx.is_sign_negative() {
-                    self.canvas.width() as f32 + nx
-                } else {
-                    nx
-                };
-                let ny = if ny.is_sign_negative() {
-                    self.canvas.height() as f32 + ny
-                } else {
-                    ny
-                };
-
-                (nx, ny)
-            }
-            PenBound::Unbounded => (x, y),
+        match self.state.bounds {
+            Some((xmin, ymin, xmax, ymax)) => (x.clamp(xmin, xmax), y.clamp(ymin, ymax)),
+            None => (x, y),
         }
+    }
+
+    fn bound_self(&mut self) {
+        let (x, y) = self.state.position;
+        self.state.position = self.bound_pos(x, y);
     }
 }
