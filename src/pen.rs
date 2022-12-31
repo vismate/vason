@@ -1,5 +1,7 @@
 use crate::{Canvas, Color};
 
+//TODO: line thickness, flood fill
+
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy)]
 pub struct PenState {

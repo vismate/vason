@@ -20,14 +20,14 @@ fn tree(pen: &mut Pen, size: f32, depth: i32) {
 }
 
 fn sun(pen: &mut Pen, scale: f32) {
-    for _ in 0..18 {
+    pen.repeat(18, |pen| {
         pen.forward(0.5 * scale)
             .turn_right(150.0)
             .forward(0.6 * scale)
             .turn_right(100.0)
             .forward(0.3 * scale)
             .turn_right(90.0);
-    }
+    });
 }
 
 fn main() {
