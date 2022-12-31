@@ -43,6 +43,11 @@ impl Canvas {
         })
     }
 
+    #[must_use]
+    pub fn into_buffer(self) -> Box<[u32]> {
+        self.buffer
+    }
+
     /// Returns the width of this [`Canvas`].
     #[must_use]
     pub fn width(&self) -> usize {
@@ -90,6 +95,49 @@ impl Canvas {
     #[inline]
     pub unsafe fn set_pixel_unchecked(&mut self, x: i32, y: i32, color: impl Into<Color>) {
         self.set_pixel_unchecked_raw_i32(x, y, u32::from(color.into()));
+    }
+
+    /// Returns an iterator of pixels and their corresponding x and y coordinates.
+    /// ```rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(2, 2);
+    /// canvas.set_pixel(0, 1, Color::RED);
+    /// let mut iter = canvas.pixel_iter();
+    ///
+    /// assert_eq!(Some((0,0,0)), iter.next());
+    /// assert_eq!(Some((1,0,0)), iter.next());
+    /// assert_eq!(Some((0,1,u32::from(Color::RED))), iter.next());
+    /// assert_eq!(Some((1,1,0)), iter.next());
+    /// assert_eq!(None, iter.next());   
+    /// ```
+    pub fn pixel_iter(&self) -> impl Iterator<Item = (usize, usize, u32)> + '_ {
+        self.buffer
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (i % self.width, i / self.width, *p))
+    }
+
+    /// Returns an iterator of mutable references to pixels and their corresponding x and y coordinates.
+    /// ```rust
+    /// use vason::{Canvas, Color};
+    /// let mut canvas = Canvas::new(2, 2);
+    ///
+    /// canvas.pixel_iter_mut()
+    ///     .filter_map(|(x,y,p)| (x != y).then(|| p))
+    ///     .for_each(|p| *p = Color::RED.into());
+    ///
+    /// let buffer = canvas.into_buffer();
+    ///
+    /// assert_eq!(0, buffer[0]); // 0, 0
+    /// assert_eq!(u32::from(Color::RED), buffer[1]); // 1, 0
+    /// assert_eq!(u32::from(Color::RED), buffer[2]); // 0, 1
+    /// assert_eq!(0, buffer[3]); // 1, 1
+    /// ```
+    pub fn pixel_iter_mut(&mut self) -> impl Iterator<Item = (usize, usize, &mut u32)> + '_ {
+        self.buffer
+            .iter_mut()
+            .enumerate()
+            .map(|(i, p)| (i % self.width, i / self.width, p))
     }
 
     /// Fills a rectangle shaped region in this [`Canvas`]. If width or height is <= 0 nothing is drawn.
@@ -374,7 +422,7 @@ impl Canvas {
     /// ``` rust
     /// use vason::{Canvas, Color};
     /// let mut canvas = Canvas::new(16,16);
-    /// canvas.thick_outline_circle(4, 8, 8, 2, Color::Cyan);
+    /// canvas.thick_outline_circle(4, 8, 8, 2, Color::CYAN);
     /// ```
     pub fn thick_outline_circle(
         &mut self,
