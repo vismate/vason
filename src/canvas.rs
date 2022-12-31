@@ -93,7 +93,6 @@ impl Canvas {
     }
 
     /// Fills a rectangle shaped region in this [`Canvas`]. If width or height is <= 0 nothing is drawn.
-    /// Renders the outline of a rectangle shaped region with a given thickness in this [`Canvas`]. If the width, height or thickness is <= 0 nothing is drawn.
     /// ``` rust
     /// use vason::{Canvas, Color};
     /// let mut canvas = Canvas::new(16,16);
@@ -116,7 +115,6 @@ impl Canvas {
     }
 
     /// Renders the outline of a rectangle shaped region in this [`Canvas`]. If width or height is <= 0 nothing is drawn.
-    /// Renders the outline of a rectangle shaped region with a given thickness in this [`Canvas`]. If the width, height or thickness is <= 0 nothing is drawn.
     /// ``` rust
     /// use vason::{Canvas, Color};
     /// let mut canvas = Canvas::new(16,16);
@@ -546,7 +544,7 @@ impl Canvas {
         if 0 <= y && y < self.clamped_height {
             let (x1, x2) = if x1 > x2 { (x2, x1) } else { (x1, x2) };
             let from_x = x1.clamp(0, self.clamped_width - 1);
-            let to_x = x2.clamp(from_x, self.clamped_width);
+            let to_x = (x2 + 1).clamp(from_x, self.clamped_width);
             let offset = y as usize * self.width;
             let range = offset + from_x as usize..offset + to_x as usize;
             self.buffer[range].fill(raw_color);
@@ -568,7 +566,7 @@ impl Canvas {
             let (y1, y2) = if y1 > y2 { (y2, y1) } else { (y1, y2) };
 
             let from_y = y1.clamp(0, self.clamped_height - 1);
-            let to_y = y2.clamp(from_y, self.clamped_height);
+            let to_y = (y2 + 1).clamp(from_y, self.clamped_height);
 
             for y in from_y..to_y {
                 unsafe { self.set_pixel_unchecked_raw_i32(x, y, raw_color) }
