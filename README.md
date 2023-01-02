@@ -21,8 +21,9 @@ The crate also works well together with minifb, thus you can even use it for sma
   - [ ] thick_outline_ellipse
   - [ ] thick_line
   - [ ] bezier_curve
+- [x] flood fill
 - [ ] copy regions over from other buffer (sprites)
-- [ ] Pen-API: ["Turtle Geometry"](https://people.eecs.berkeley.edu/~bh/v1ch10/turtle.html)
+- [x] Pen-API: ["Turtle Geometry"](https://people.eecs.berkeley.edu/~bh/v1ch10/turtle.html)
 - [ ] alpha compositing (transparency)
 - [ ] built-in monospaced font rendering
 - further optimizations...
@@ -35,7 +36,8 @@ use std::fs::File;
 use vason::{ppm::encode_canvas, Canvas, Color};
 
 fn main() {
-    let mut canvas = Canvas::new(256, 256);
+    let mut buffer = vec![0u32; 256*256];
+    let mut canvas = Canvas::new(&mut buffer, 256, 256);
     canvas.clear((180, 255, 100));
     canvas.fill_rect(80, 40, 128, 192, Color::GREEN);
     canvas.fill_circle(-40, -40, 128, Color::BLUE);
