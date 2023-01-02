@@ -1,51 +1,28 @@
 use crate::{Color, Pen};
 
-pub struct Canvas {
-    buffer: Box<[u32]>,
+pub struct Canvas<'a> {
+    buffer: &'a mut [u32],
     width: usize,
     height: usize,
     clamped_width: i32,
     clamped_height: i32,
 }
 
-impl Canvas {
+impl<'a> Canvas<'a> {
     /// Creates a new [`Canvas`] with giver width and height.
-    #[must_use]
-    pub fn new(width: usize, height: usize) -> Self {
-        match Self::from_buffer(vec![0; width * height].into_boxed_slice(), width, height) {
-            Ok(canvas) => canvas,
-            _ => unreachable!(
-                "we have controll over the buffer allocation, so it should be the right size"
-            ),
-        }
-    }
-
-    /// Creates a canvas from a pre-allocated buffer.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if width and height does not match the size of the supplied buffer.
+    /// # Panics
+    /// This function panics if the supplied width and height does not match the buffer size.
     #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
-    pub fn from_buffer(buffer: Box<[u32]>, width: usize, height: usize) -> Result<Self, String> {
-        if width * height != buffer.len() {
-            return Err("buffer size does not match supplied width and height".into());
-        }
-
-        let clamped_width = width.min(i32::MAX as usize) as i32;
-        let clamped_height = height.min(i32::MAX as usize) as i32;
-
-        Ok(Self {
+    #[must_use]
+    pub fn new(buffer: &'a mut [u32], width: usize, height: usize) -> Self {
+        assert!(buffer.len() == width * height);
+        Self {
             buffer,
             width,
             height,
-            clamped_width,
-            clamped_height,
-        })
-    }
-
-    #[must_use]
-    pub fn into_buffer(self) -> Box<[u32]> {
-        self.buffer
+            clamped_width: width.min(i32::MAX as usize) as i32,
+            clamped_height: height.min(i32::MAX as usize) as i32,
+        }
     }
 
     /// Returns the width of this [`Canvas`].
@@ -63,17 +40,17 @@ impl Canvas {
     /// Returns a reference to the buffer of this [`Canvas`].
     #[must_use]
     pub fn buffer(&self) -> &[u32] {
-        &self.buffer
+        self.buffer
     }
 
     /// Returns a mutable reference to the buffer of this [`Canvas`].
     #[must_use]
     pub fn buffer_mut(&mut self) -> &mut [u32] {
-        &mut self.buffer
+        self.buffer
     }
 
     #[must_use]
-    pub fn pen(&mut self) -> Pen<'_> {
+    pub fn pen(&mut self) -> Pen<'_, 'a> {
         Pen::new(self)
     }
 
@@ -105,7 +82,8 @@ impl Canvas {
     /// Returns an iterator of pixels and their corresponding x and y coordinates.
     /// ```rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(2, 2);
+    /// let mut buffer = [0u32; 4];
+    /// let mut canvas = Canvas::new(&mut buffer, 2, 2);
     /// canvas.set_pixel(0, 1, Color::RED);
     /// let mut iter = canvas.pixel_iter();
     ///
@@ -125,13 +103,12 @@ impl Canvas {
     /// Returns an iterator of mutable references to pixels and their corresponding x and y coordinates.
     /// ```rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(2, 2);
+    /// let mut buffer = [0u32; 4];
+    /// let mut canvas = Canvas::new(&mut buffer, 2, 2);
     ///
     /// canvas.pixel_iter_mut()
     ///     .filter_map(|(x,y,p)| (x != y).then(|| p))
     ///     .for_each(|p| *p = Color::RED.into());
-    ///
-    /// let buffer = canvas.into_buffer();
     ///
     /// assert_eq!(0, buffer[0]); // 0, 0
     /// assert_eq!(u32::from(Color::RED), buffer[1]); // 1, 0
@@ -148,7 +125,8 @@ impl Canvas {
     /// Fills a rectangle shaped region in this [`Canvas`]. If width or height is <= 0 nothing is drawn.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.fill_rect(3, 3, 7, 7, Color::RED);
     /// ```
     #[allow(clippy::cast_sign_loss)]
@@ -170,7 +148,8 @@ impl Canvas {
     /// Renders the outline of a rectangle shaped region in this [`Canvas`]. If width or height is <= 0 nothing is drawn.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.outline_rect(3, 3, 7, 7, Color::RED);
     /// ```
     #[allow(clippy::cast_sign_loss)]
@@ -228,7 +207,8 @@ impl Canvas {
     /// Renders the outline of a rectangle shaped region with a given thickness in this [`Canvas`]. If the width, height or thickness is <= 0 nothing is drawn.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16,16);
     /// canvas.thick_outline_rect(3, 3, 7, 7, 2, Color::RED);
     /// ```
     #[allow(clippy::cast_sign_loss)]
@@ -314,7 +294,8 @@ impl Canvas {
     /// Fills a circle shaped region in this [`Canvas`]. The radius must be positive, but uses the absoulte value otherwise.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.fill_circle(8, 8, 4, Color::GREEN);
     /// ```
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
@@ -362,7 +343,8 @@ impl Canvas {
     /// Renders the outline of a circle shaped region in this [`Canvas`]. The radius must be positive, but uses the absoulte value otherwise.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16,16);
     /// canvas.outline_circle(8, 8, 8, Color::YELLOW);
     /// ```
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
@@ -426,7 +408,8 @@ impl Canvas {
     /// The stroke witdth grows symmetrically (inwards and outwards), that is the supplied radius will be the center of the stroke.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.thick_outline_circle(4, 8, 8, 2, Color::CYAN);
     /// ```
     pub fn thick_outline_circle(
@@ -493,7 +476,8 @@ impl Canvas {
     /// Fills an ellipse shaped region in this [`Canvas`]. The radii must be positive, but uses the absoulte value otherwise.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.fill_ellipse(8, 8, 8, 4, Color::RED);
     /// ```
     #[allow(clippy::many_single_char_names, clippy::cast_sign_loss)]
@@ -567,7 +551,8 @@ impl Canvas {
     /// Renders the outline of an ellipse shaped region in this [`Canvas`]. The radii must be positive, but uses the absoulte value otherwise.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.outline_ellipse(8, 8, 8, 4, Color::RED);
     /// ```
     #[allow(clippy::many_single_char_names)]
@@ -655,7 +640,8 @@ impl Canvas {
     /// Renders a horizontal line. Should be preferred when explicitly drawing horizontal lines.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32;256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.hline(10, 0, 16, Color::RED);
     /// ```
     #[allow(clippy::cast_sign_loss)]
@@ -676,7 +662,8 @@ impl Canvas {
     /// Renders a vertical line. Should be preferred when explicitly drawing vertical lines.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.vline(10, 0, 16, Color::RED);
     /// ```
     #[allow(clippy::cast_sign_loss)]
@@ -699,7 +686,8 @@ impl Canvas {
     /// Renders a horizontal line with thickness. Should be preferred when explicitly drawing thick horizontal lines.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.thick_hline(10, 0, 16, 2, Color::RED);
     /// ```
     #[inline]
@@ -719,7 +707,8 @@ impl Canvas {
     /// Renders a vertical line with thickness. Should be preferred when explicitly drawing thick vertical lines.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.thick_vline(10, 0, 16, 2, Color::RED);
     #[inline]
     pub fn thick_vline(
@@ -739,7 +728,8 @@ impl Canvas {
     /// If there is a substantial chance of drawing axis-aligned (hline or vline) consider using [`line_maybe_axis_aligned`](struct.Canvas.html#method.line_maybe_axis_aligned) instead
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.line(10,2,10,12, Color::RED);
     /// ```
     pub fn line(&mut self, mut x1: i32, mut y1: i32, x2: i32, y2: i32, color: impl Into<Color>) {
@@ -775,13 +765,14 @@ impl Canvas {
             }
         }
     }
-    
+
     #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     /// Renders a line. Should be preferred when mostly drawing axis-aligned lines.
     /// If it is not very likely you'll draw a lot of axis-aligned lines prefer [`line`](struct.Canvas.html#method.line) instead.
     /// ``` rust
     /// use vason::{Canvas, Color};
-    /// let mut canvas = Canvas::new(16,16);
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16,16);
     /// // axis aligned
     /// canvas.line_maybe_axis_aligned(10,2,10,12, Color::RED);
     /// // not axis aligned
@@ -805,6 +796,7 @@ impl Canvas {
         }
     }
 
+    /// Starts a flood fill from supplied coordinate filling the area with the color provided.
     pub fn flood_fill(&mut self, x: i32, y: i32, color: impl Into<Color>) {
         if 0 <= x && x < self.clamped_width && 0 <= y && y < self.clamped_height {
             let raw_color = u32::from(color.into());

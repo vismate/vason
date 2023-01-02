@@ -24,17 +24,17 @@ impl Default for PenState {
     }
 }
 
-pub struct Pen<'a> {
-    canvas: &'a mut Canvas,
+pub struct Pen<'a, 'b> {
+    canvas: &'a mut Canvas<'b>,
     state: PenState,
 }
 
-impl<'a> Pen<'a> {
-    pub fn new(canvas: &'a mut Canvas) -> Self {
+impl<'a, 'b> Pen<'a, 'b> {
+    pub fn new(canvas: &'a mut Canvas<'b>) -> Self {
         Self::with_state(canvas, PenState::default())
     }
 
-    pub fn with_state(canvas: &'a mut Canvas, state: PenState) -> Self {
+    pub fn with_state(canvas: &'a mut Canvas<'b>, state: PenState) -> Self {
         let mut s = Self { canvas, state };
         s.bound_self();
         s
@@ -74,12 +74,12 @@ impl<'a> Pen<'a> {
     }
 
     #[must_use]
-    pub fn canvas(&self) -> &Canvas {
+    pub fn canvas(&self) -> &Canvas<'b> {
         self.canvas
     }
 
     #[must_use]
-    pub fn canvas_mut(&mut self) -> &mut Canvas {
+    pub fn canvas_mut(&mut self) -> &mut Canvas<'b> {
         self.canvas
     }
 
