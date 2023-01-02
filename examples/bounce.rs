@@ -7,7 +7,8 @@ const SCREEN_WIDTH: usize = 1280;
 const SCREEN_HEIGHT: usize = 720;
 
 fn main() {
-    let mut canvas = Canvas::new(SCREEN_WIDTH, SCREEN_HEIGHT);
+    let mut buffer = vec![0u32; SCREEN_WIDTH * SCREEN_HEIGHT];
+    let mut canvas = Canvas::new(&mut buffer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     let width = SCREEN_WIDTH as i32;
     let height = SCREEN_HEIGHT as i32;

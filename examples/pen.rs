@@ -31,7 +31,8 @@ fn sun(pen: &mut Pen, scale: f32) {
 }
 
 fn main() {
-    let mut canvas = Canvas::new(1024, 1024);
+    let mut buffer = vec![0u32; 1024 * 1024];
+    let mut canvas = Canvas::new(&mut buffer, 1024, 1024);
     canvas.clear((15, 15, 35));
     let mut pen = canvas.pen();
 

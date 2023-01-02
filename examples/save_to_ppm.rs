@@ -2,7 +2,8 @@ use std::fs::File;
 use vason::{ppm::encode_canvas, Canvas, Color};
 
 fn main() {
-    let mut canvas = Canvas::new(256, 256);
+    let mut buffer = vec![0; 256 * 256];
+    let mut canvas = Canvas::new(&mut buffer, 256, 256);
     canvas.clear((180, 255, 100));
     canvas.fill_rect(80, 40, 128, 192, Color::GREEN);
     canvas.fill_circle(-40, -40, 128, Color::BLUE);
