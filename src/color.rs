@@ -5,7 +5,7 @@
 pub struct Color(pub u32);
 
 impl Color {
-    /// Creates a color from r, g and b values.
+    /// Creates a [`Color`] from r, g and b values.
     ///
     /// # Examples
     ///
@@ -41,15 +41,26 @@ impl Color {
         Self::rgb(c, c, c)
     }
 
-    // TODO: More color constants
     pub const BLACK: Self = Self::rgb(0, 0, 0);
+    pub const GRAY: Self = Self::rgb(128, 128, 128);
     pub const WHITE: Self = Self::rgb(255, 255, 255);
+    pub const LIGHT_GRAY: Self = Self::rgb(192, 192, 192);
     pub const RED: Self = Self::rgb(255, 0, 0);
+    pub const DARK_RED: Self = Self::rgb(128, 0, 0);
     pub const GREEN: Self = Self::rgb(0, 255, 0);
+    pub const DARK_GREEN: Self = Self::rgb(0, 128, 0);
     pub const BLUE: Self = Self::rgb(0, 0, 255);
+    pub const DARK_BLUE: Self = Self::rgb(0, 0, 128);
     pub const CYAN: Self = Self::rgb(0, 255, 255);
+    pub const TEAL: Self = Self::rgb(0, 128, 128);
     pub const MAGENTA: Self = Self::rgb(255, 0, 255);
+    pub const PURPLE: Self = Self::rgb(128, 0, 128);
     pub const YELLOW: Self = Self::rgb(255, 255, 0);
+    pub const OLIVE: Self = Self::rgb(128, 128, 0);
+    pub const BROWN: Self = Self::rgb(165, 42, 42);
+    pub const GOLD: Self = Self::rgb(255, 215, 0);
+    pub const INDIGO: Self = Self::rgb(75, 0, 130);
+    pub const SKY_BLUE: Self = Self::rgb(135, 205, 250);
 }
 
 impl From<u32> for Color {

@@ -1,5 +1,4 @@
-#![feature(iter_array_chunks)]
-
+#![doc = include_str!("../README.md")]
 pub mod canvas;
 pub mod color;
 pub mod pen;
