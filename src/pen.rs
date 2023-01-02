@@ -1,6 +1,6 @@
 use crate::{Canvas, Color};
 
-//TODO: line thickness, flood fill
+//TODO: line thickness
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy)]
@@ -149,6 +149,16 @@ impl<'a> Pen<'a> {
 
     pub fn backward(&mut self, amount: f32) -> &mut Self {
         self.forward(-amount)
+    }
+
+    #[allow(clippy::cast_possible_truncation)]
+    pub fn flood_fill(&mut self) -> &mut Self {
+        self.canvas.flood_fill(
+            self.state.position.0 as i32,
+            self.state.position.1 as i32,
+            self.state.color,
+        );
+        self
     }
 
     pub fn set_direction(&mut self, deg: f32) -> &mut Self {
