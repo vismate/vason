@@ -1,4 +1,4 @@
-use crate::Color;
+use crate::{Color, Pen};
 
 pub struct Canvas {
     buffer: Box<[u32]>,
@@ -70,6 +70,11 @@ impl Canvas {
     #[must_use]
     pub fn buffer_mut(&mut self) -> &mut [u32] {
         &mut self.buffer
+    }
+
+    #[must_use]
+    pub fn pen(&mut self) -> Pen<'_> {
+        Pen::new(self)
     }
 
     /// Clear the entire buffer with supplied color.
@@ -770,7 +775,8 @@ impl Canvas {
             }
         }
     }
-
+    
+    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     /// Renders a line. Should be preferred when mostly drawing axis-aligned lines.
     /// If it is not very likely you'll draw a lot of axis-aligned lines prefer [`line`](struct.Canvas.html#method.line) instead.
     /// ``` rust
@@ -796,6 +802,109 @@ impl Canvas {
             self.hline(y1, x1, x2, color);
         } else {
             self.line(x1, y1, x2, y2, color);
+        }
+    }
+
+    pub fn flood_fill(&mut self, x: i32, y: i32, color: impl Into<Color>) {
+        if 0 <= x && x < self.clamped_width && 0 <= y && y < self.clamped_height {
+            let raw_color = u32::from(color.into());
+            let xu = x as usize;
+            let yu = y as usize;
+            let seed_color = self.buffer[yu * self.width + xu];
+            if seed_color != raw_color {
+                self.flood_fill_start(xu, yu, seed_color, raw_color);
+            }
+        }
+    }
+
+    fn flood_fill_start(&mut self, mut x: usize, mut y: usize, seed_color: u32, raw_color: u32) {
+        loop {
+            let ox = x;
+            let oy = y;
+
+            while y != 0 && self.buffer[(y - 1) * self.width + x] == seed_color {
+                y -= 1;
+            }
+            while x != 0 && self.buffer[y * self.width + (x - 1)] == seed_color {
+                x -= 1;
+            }
+
+            if x == ox && y == oy {
+                break;
+            }
+        }
+
+        self.flood_fill_core(x, y, seed_color, raw_color);
+    }
+
+    fn flood_fill_core(&mut self, mut x: usize, mut y: usize, seed_color: u32, raw_color: u32) {
+        let mut last_row_len = 0;
+
+        loop {
+            let mut row_len = 0;
+            let mut sx = x;
+
+            if last_row_len != 0 && self.buffer[y * self.width + x] != seed_color {
+                loop {
+                    last_row_len -= 1;
+                    if last_row_len == 0 {
+                        return;
+                    }
+                    x += 1;
+                    if self.buffer[y * self.width + x] == seed_color {
+                        break;
+                    }
+                }
+                sx = x;
+            } else {
+                while x != 0 && self.buffer[y * self.width + x - 1] == seed_color {
+                    x -= 1;
+                    self.buffer[y * self.width + x] = raw_color;
+                    if y != 0 && self.buffer[(y - 1) * self.width + x] == seed_color {
+                        self.flood_fill_start(x, y - 1, seed_color, raw_color);
+                    }
+                    row_len += 1;
+                    last_row_len += 1;
+                }
+            }
+
+            while sx < self.width && self.buffer[y * self.width + sx] == seed_color {
+                self.buffer[y * self.width + sx] = raw_color;
+                row_len += 1;
+                sx += 1;
+            }
+
+            if row_len < last_row_len {
+                let end = x + last_row_len;
+
+                loop {
+                    sx += 1;
+                    if sx >= end {
+                        break;
+                    }
+                    if self.buffer[y * self.width + sx] == seed_color {
+                        self.flood_fill_core(sx, y, seed_color, raw_color);
+                    }
+                }
+            } else if row_len > last_row_len && y != 0 {
+                let mut ux = x + last_row_len;
+                loop {
+                    ux += 1;
+                    if ux >= sx {
+                        break;
+                    }
+                    if self.buffer[(y - 1) * self.width + ux] == seed_color {
+                        self.flood_fill_start(ux, y - 1, seed_color, raw_color);
+                    }
+                }
+            }
+
+            last_row_len = row_len;
+
+            y += 1;
+            if last_row_len == 0 || y >= self.height {
+                break;
+            }
         }
     }
 
