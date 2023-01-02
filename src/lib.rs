@@ -6,9 +6,9 @@ mod pixel_access;
 pub mod ppm;
 
 pub type Canvas<'a> = canvas::Canvas<'a, pixel_access::NoAlphaAccess>;
-pub type CanvasWithAlpha<'a> = canvas::Canvas<'a, pixel_access::AlpaAccess>;
+pub type CanvasWithAlpha<'a> = canvas::Canvas<'a, pixel_access::AlphaAccess>;
 
 pub type Pen<'a, 'b> = pen::Pen<'a, 'b, pixel_access::NoAlphaAccess>;
-pub type PenWithAlpha<'a, 'b> = pen::Pen<'a, 'b, pixel_access::AlpaAccess>;
+pub type PenWithAlpha<'a, 'b> = pen::Pen<'a, 'b, pixel_access::AlphaAccess>;
 
 pub use color::Color;
