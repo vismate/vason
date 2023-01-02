@@ -1,14 +1,15 @@
-use crate::{Color, Pen};
+use crate::{pen::Pen, pixel_access::PixelAccess, Color};
 
-pub struct Canvas<'a> {
+pub struct Canvas<'a, PA: PixelAccess> {
     buffer: &'a mut [u32],
     width: usize,
     height: usize,
     clamped_width: i32,
     clamped_height: i32,
+    _pa_phantom: std::marker::PhantomData<PA>,
 }
 
-impl<'a> Canvas<'a> {
+impl<'a, PA: PixelAccess> Canvas<'a, PA> {
     /// Creates a new [`Canvas`] with giver width and height.
     /// # Panics
     /// This function panics if the supplied width and height does not match the buffer size.
@@ -22,6 +23,7 @@ impl<'a> Canvas<'a> {
             height,
             clamped_width: width.min(i32::MAX as usize) as i32,
             clamped_height: height.min(i32::MAX as usize) as i32,
+            _pa_phantom: std::marker::PhantomData,
         }
     }
 
@@ -50,7 +52,7 @@ impl<'a> Canvas<'a> {
     }
 
     #[must_use]
-    pub fn pen(&mut self) -> Pen<'_, 'a> {
+    pub fn pen(&mut self) -> Pen<'_, 'a, PA> {
         Pen::new(self)
     }
 
@@ -139,7 +141,7 @@ impl<'a> Canvas<'a> {
         let mut to_idx = offset + to_x as usize;
 
         for _ in from_y..to_y {
-            self.buffer[from_idx..to_idx].fill(raw_color);
+            PA::fill(&mut self.buffer[from_idx..to_idx], raw_color);
             from_idx += self.width;
             to_idx += self.width;
         }
@@ -173,12 +175,12 @@ impl<'a> Canvas<'a> {
 
             if 0 <= y1 {
                 let offset = y1 as usize * self.width;
-                self.buffer[offset + from_x..offset + to_x].fill(raw_color);
+                PA::fill(&mut self.buffer[offset + from_x..offset + to_x], raw_color);
             }
 
             if 0 <= y2 && y2 < self.clamped_height {
                 let offset = y2 as usize * self.width;
-                self.buffer[offset + from_x..offset + to_x].fill(raw_color);
+                PA::fill(&mut self.buffer[offset + from_x..offset + to_x], raw_color);
             }
         }
 
@@ -247,7 +249,7 @@ impl<'a> Canvas<'a> {
                     (y1 - half_thickness).max(0)..(y1 + half_thickness).min(self.clamped_height)
                 {
                     let offset = j as usize * self.width;
-                    self.buffer[offset + from_x..offset + to_x].fill(raw_color);
+                    PA::fill(&mut self.buffer[offset + from_x..offset + to_x], raw_color);
                 }
             }
 
@@ -256,7 +258,7 @@ impl<'a> Canvas<'a> {
                     (y2 - half_thickness).max(0)..(y2 + half_thickness).min(self.clamped_height)
                 {
                     let offset = j as usize * self.width;
-                    self.buffer[offset + from_x..offset + to_x].fill(raw_color);
+                    PA::fill(&mut self.buffer[offset + from_x..offset + to_x], raw_color);
                 }
             }
         }
@@ -316,13 +318,13 @@ impl<'a> Canvas<'a> {
             if 0 <= y1 && y1 < self.clamped_height {
                 let offset = y1 as usize * self.width;
                 let range = offset + from_x as usize..offset + to_x as usize;
-                self.buffer[range].fill(raw_color);
+                PA::fill(&mut self.buffer[range], raw_color);
             }
 
             if 0 <= y2 && y2 < self.clamped_height {
                 let offset = y2 as usize * self.width;
                 let range = offset + from_x as usize..offset + to_x as usize;
-                self.buffer[range].fill(raw_color);
+                PA::fill(&mut self.buffer[range], raw_color);
             }
             r = err;
             if r <= j {
@@ -350,7 +352,6 @@ impl<'a> Canvas<'a> {
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
     pub fn outline_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
-
         let mut r = r.abs();
         let mut i = -r;
         let mut j = 0;
@@ -504,13 +505,13 @@ impl<'a> Canvas<'a> {
             if 0 <= y1 && y1 < self.clamped_height {
                 let offset = y1 as usize * self.width;
                 let range = offset + from_x as usize..offset + to_x as usize;
-                self.buffer[range].fill(raw_color);
+                PA::fill(&mut self.buffer[range], raw_color);
             }
 
             if 0 <= y2 && y2 < self.clamped_height {
                 let offset = y2 as usize * self.width;
                 let range = offset + from_x as usize..offset + to_x as usize;
-                self.buffer[range].fill(raw_color);
+                PA::fill(&mut self.buffer[range], raw_color);
             }
 
             let e2 = 2 * err;
@@ -655,7 +656,7 @@ impl<'a> Canvas<'a> {
             let to_x = (x2 + 1).clamp(from_x, self.clamped_width);
             let offset = y as usize * self.width;
             let range = offset + from_x as usize..offset + to_x as usize;
-            self.buffer[range].fill(raw_color);
+            PA::fill(&mut self.buffer[range], raw_color);
         }
     }
 
@@ -851,7 +852,9 @@ impl<'a> Canvas<'a> {
             } else {
                 while x != 0 && self.buffer[y * self.width + x - 1] == seed_color {
                     x -= 1;
-                    self.buffer[y * self.width + x] = raw_color;
+                    unsafe {
+                        self.set_pixel_unchecked_raw(x, y, raw_color);
+                    }
                     if y != 0 && self.buffer[(y - 1) * self.width + x] == seed_color {
                         self.flood_fill_start(x, y - 1, seed_color, raw_color);
                     }
@@ -861,7 +864,9 @@ impl<'a> Canvas<'a> {
             }
 
             while sx < self.width && self.buffer[y * self.width + sx] == seed_color {
-                self.buffer[y * self.width + sx] = raw_color;
+                unsafe {
+                    self.set_pixel_unchecked_raw(sx, y, raw_color);
+                }
                 row_len += 1;
                 sx += 1;
             }
@@ -912,13 +917,14 @@ impl<'a> Canvas<'a> {
         (from_x, to_x, from_y, to_y)
     }
 
-    #[allow(clippy::cast_sign_loss)]
-    #[inline]
+    #[allow(clippy::cast_sign_loss, clippy::inline_always)]
+    #[inline(always)]
     unsafe fn set_pixel_unchecked_raw_i32(&mut self, x: i32, y: i32, raw_color: u32) {
-        debug_assert!(x >= 0 && y >= 0);
-        let idx = y as usize * self.width + x as usize;
+        PA::set_pixel_unchecked(self.buffer, x as usize, y as usize, self.width, raw_color);
+    }
 
-        debug_assert!(idx < self.buffer.len());
-        *self.buffer.get_unchecked_mut(idx) = raw_color;
+    #[inline(always)]
+    unsafe fn set_pixel_unchecked_raw(&mut self, x: usize, y: usize, raw_color: u32) {
+        PA::set_pixel_unchecked(self.buffer, x, y, self.width, raw_color);
     }
 }

@@ -1,4 +1,4 @@
-use crate::{Canvas, Color};
+use crate::{canvas::Canvas, pixel_access::PixelAccess, Color};
 
 //TODO: line thickness
 
@@ -24,18 +24,23 @@ impl Default for PenState {
     }
 }
 
-pub struct Pen<'a, 'b> {
-    canvas: &'a mut Canvas<'b>,
+pub struct Pen<'a, 'b, PA: PixelAccess> {
+    canvas: &'a mut Canvas<'b, PA>,
     state: PenState,
+    _pa_phantom: std::marker::PhantomData<PA>,
 }
 
-impl<'a, 'b> Pen<'a, 'b> {
-    pub fn new(canvas: &'a mut Canvas<'b>) -> Self {
+impl<'a, 'b, PA: PixelAccess> Pen<'a, 'b, PA> {
+    pub fn new(canvas: &'a mut Canvas<'b, PA>) -> Self {
         Self::with_state(canvas, PenState::default())
     }
 
-    pub fn with_state(canvas: &'a mut Canvas<'b>, state: PenState) -> Self {
-        let mut s = Self { canvas, state };
+    pub fn with_state(canvas: &'a mut Canvas<'b, PA>, state: PenState) -> Self {
+        let mut s = Self {
+            canvas,
+            state,
+            _pa_phantom: std::marker::PhantomData,
+        };
         s.bound_self();
         s
     }
@@ -74,12 +79,12 @@ impl<'a, 'b> Pen<'a, 'b> {
     }
 
     #[must_use]
-    pub fn canvas(&self) -> &Canvas<'b> {
+    pub fn canvas(&self) -> &Canvas<'b, PA> {
         self.canvas
     }
 
     #[must_use]
-    pub fn canvas_mut(&mut self) -> &mut Canvas<'b> {
+    pub fn canvas_mut(&mut self) -> &mut Canvas<'b, PA> {
         self.canvas
     }
 
