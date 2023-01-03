@@ -1,12 +1,12 @@
 # vason - simple 2D rasterizer
 
-**WARNING: This crate is in very early stages. Anything could changes anytime. Use at your own risk.**
+**WARNING: This crate is in very early stages. Anything can change anytime. Use at your own risk.**
 
 This crate enables you to render simple 2D shapes to a buffer of pixels.
 After creating a Canvas, you have access to methods to fill in, or draw the outline of shapes.
 
 A ppm module is included that lets you save your buffer as an image (that can be displayed by some major image viewers).
-The crate also works well together with minifb, thus you can even use it for small games / demos / visualizations.
+The crate also works well together with libraries such as [minifb](https://crates.io/crates/minifb), thus you can even use it for small games / demos / visualizations.
 
 ## Current and planned features:
 - [x] basic shape rendering:
