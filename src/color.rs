@@ -17,7 +17,7 @@ impl Color {
     /// ```
     #[must_use]
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self(u32::from_le_bytes([b, g, r, 0]))
+        Self(u32::from_le_bytes([b, g, r, 255]))
     }
 
     /// Returns a tuple of (r,g,b) values.
