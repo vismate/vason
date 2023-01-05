@@ -8,6 +8,7 @@ pub struct PenState {
     pub position: (f32, f32),
     pub direction: f32,
     pub color: Color,
+    pub thickness: i32,
     pub is_down: bool,
     pub bounds: Option<(f32, f32, f32, f32)>,
 }
@@ -18,6 +19,7 @@ impl Default for PenState {
             position: (0.0, 0.0),
             direction: 0.0,
             color: Color::WHITE,
+            thickness: 1,
             is_down: true,
             bounds: None,
         }
@@ -130,16 +132,26 @@ impl<'a, 'b> Pen<'a, 'b> {
             self.state.position.1 + dy * amount,
         );
 
-        // TODO: use line_maybe_axis_aligned once available after a merge
         #[allow(clippy::cast_possible_truncation)]
         if self.state.is_down {
-            self.canvas.line(
-                self.state.position.0 as i32,
-                self.state.position.1 as i32,
-                new_pos.0 as i32,
-                new_pos.1 as i32,
-                self.state.color,
-            );
+            let x1 = self.state.position.0 as i32;
+            let y1 = self.state.position.1 as i32;
+            let x2 = new_pos.0 as i32;
+            let y2 = new_pos.1 as i32;
+
+            // thickness <= 1 checked by canvas.thick_line
+            self.canvas
+                .thick_line(x1, y1, x2, y2, self.state.thickness, self.state.color);
+
+            if self.state.thickness > 1 {
+                let half_thickness = self.state.thickness / 2;
+
+                // TODO: optimize with kind of a dirty flag?
+                self.canvas
+                    .fill_circle(x1, y1, half_thickness, self.state.color);
+                self.canvas
+                    .fill_circle(x2, y2, half_thickness, self.state.color);
+            }
         }
 
         self.state.position = new_pos;
@@ -209,6 +221,16 @@ impl<'a, 'b> Pen<'a, 'b> {
     #[must_use]
     pub fn get_color(&self) -> Color {
         self.state.color
+    }
+
+    pub fn set_thickness(&mut self, thickness: i32) -> &mut Self {
+        self.state.thickness = thickness;
+        self
+    }
+
+    #[must_use]
+    pub fn get_thickness(&self) -> i32 {
+        self.state.thickness
     }
 
     pub fn pen_up(&mut self) -> &mut Self {
