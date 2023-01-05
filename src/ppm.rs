@@ -18,7 +18,8 @@ pub fn encode_canvas(canvas: &Canvas, w: &mut dyn Write) -> Result<()> {
 ///
 /// This function will return an error if there was an i/o error whilest writing.
 pub fn encode_buffer(buffer: &[u32], width: usize, height: usize, w: &mut dyn Write) -> Result<()> {
-    writeln!(w, "P6 {width} {height} 255")?;
+    #[allow(clippy::uninlined_format_args)]
+    writeln!(w, "P6 {} {} 255", width, height)?;
 
     // instead of calling write on all pixels, we create chunks.
     // this significantly increases performance even without the use of BufWriters.
