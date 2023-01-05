@@ -1,7 +1,5 @@
 use crate::{Canvas, Color};
 
-//TODO: line thickness
-
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy)]
 pub struct PenState {
@@ -103,16 +101,12 @@ impl<'a, 'b> Pen<'a, 'b> {
     pub fn set_position_draw(&mut self, x: f32, y: f32) -> &mut Self {
         let (x, y) = self.bound_pos(x, y);
 
-        // TODO: use line_maybe_axis_aligned once available after a merge
         #[allow(clippy::cast_possible_truncation)]
         if self.state.is_down {
-            self.canvas.line(
-                self.state.position.0 as i32,
-                self.state.position.1 as i32,
-                x as i32,
-                y as i32,
-                self.state.color,
-            );
+            let x1 = self.state.position.0 as i32;
+            let y1 = self.state.position.1 as i32;
+
+            self.stroke(x1, y1, x as i32, y as i32);
         }
 
         self.state.position = (x, y);
@@ -139,19 +133,7 @@ impl<'a, 'b> Pen<'a, 'b> {
             let x2 = new_pos.0 as i32;
             let y2 = new_pos.1 as i32;
 
-            // thickness <= 1 checked by canvas.thick_line
-            self.canvas
-                .thick_line(x1, y1, x2, y2, self.state.thickness, self.state.color);
-
-            if self.state.thickness > 1 {
-                let half_thickness = self.state.thickness / 2;
-
-                // TODO: optimize with kind of a dirty flag?
-                self.canvas
-                    .fill_circle(x1, y1, half_thickness, self.state.color);
-                self.canvas
-                    .fill_circle(x2, y2, half_thickness, self.state.color);
-            }
+            self.stroke(x1, y1, x2, y2);
         }
 
         self.state.position = new_pos;
@@ -267,5 +249,21 @@ impl<'a, 'b> Pen<'a, 'b> {
     fn bound_self(&mut self) {
         let (x, y) = self.state.position;
         self.state.position = self.bound_pos(x, y);
+    }
+
+    fn stroke(&mut self, x1: i32, y1: i32, x2: i32, y2: i32) {
+        // thickness <= 1 checked by canvas.thick_line
+        self.canvas
+            .thick_line(x1, y1, x2, y2, self.state.thickness, self.state.color);
+
+        if self.state.thickness > 1 {
+            let half_thickness = self.state.thickness / 2;
+
+            // TODO: optimize with kind of a dirty flag?
+            self.canvas
+                .fill_circle(x1, y1, half_thickness, self.state.color);
+            self.canvas
+                .fill_circle(x2, y2, half_thickness, self.state.color);
+        }
     }
 }
