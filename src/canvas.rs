@@ -299,10 +299,13 @@ impl<'a> Canvas<'a> {
     /// canvas.fill_circle(8, 8, 4, Color::GREEN);
     /// ```
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
-    pub fn fill_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
+    pub fn fill_circle(&mut self, x: i32, y: i32, mut r: i32, color: impl Into<Color>) {
+        if r < 1 {
+            return;
+        }
+
         let raw_color = u32::from(color.into());
 
-        let mut r = r.abs();
         let mut i = -r;
         let mut j = 0;
         let mut err = 2 - 2 * r;
@@ -348,10 +351,12 @@ impl<'a> Canvas<'a> {
     /// canvas.outline_circle(8, 8, 8, Color::YELLOW);
     /// ```
     #[allow(clippy::cast_sign_loss, clippy::many_single_char_names)]
-    pub fn outline_circle(&mut self, x: i32, y: i32, r: i32, color: impl Into<Color>) {
-        let raw_color = u32::from(color.into());
+    pub fn outline_circle(&mut self, x: i32, y: i32, mut r: i32, color: impl Into<Color>) {
+        if r < 1 {
+            return;
+        }
 
-        let mut r = r.abs();
+        let raw_color = u32::from(color.into());
         let mut i = -r;
         let mut j = 0;
         let mut err = 2 - 2 * r;
@@ -412,6 +417,7 @@ impl<'a> Canvas<'a> {
     /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
     /// canvas.thick_outline_circle(4, 8, 8, 2, Color::CYAN);
     /// ```
+    #[allow(clippy::similar_names)]
     pub fn thick_outline_circle(
         &mut self,
         x: i32,
@@ -420,7 +426,7 @@ impl<'a> Canvas<'a> {
         thickness: i32,
         color: impl Into<Color>,
     ) {
-        if thickness <= 0 {
+        if thickness <= 0 || r < 1 {
             return;
         } else if thickness == 1 {
             self.outline_circle(x, y, r, color);
@@ -428,8 +434,6 @@ impl<'a> Canvas<'a> {
         }
 
         let raw_color = u32::from(color.into());
-
-        let r = r.abs();
 
         let half_thickness = thickness / 2;
 
@@ -482,9 +486,11 @@ impl<'a> Canvas<'a> {
     /// ```
     #[allow(clippy::many_single_char_names, clippy::cast_sign_loss)]
     pub fn fill_ellipse(&mut self, x: i32, y: i32, a: i32, b: i32, color: impl Into<Color>) {
+        if a < 1 || b < 1 {
+            return;
+        }
+
         let raw_color = u32::from(color.into());
-        let a = a.abs();
-        let b = b.abs();
 
         let mut i = -a;
         let mut j = 0;
@@ -557,9 +563,11 @@ impl<'a> Canvas<'a> {
     /// ```
     #[allow(clippy::many_single_char_names)]
     pub fn outline_ellipse(&mut self, x: i32, y: i32, a: i32, b: i32, color: impl Into<Color>) {
+        if a < 1 || b < 1 {
+            return;
+        }
+
         let raw_color = u32::from(color.into());
-        let a = a.abs();
-        let b = b.abs();
 
         let mut i = -a;
         let mut j = 0;
@@ -635,6 +643,137 @@ impl<'a> Canvas<'a> {
                 }
             }
         }
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
+    pub fn fill_triangle(
+        &mut self,
+        mut x1: i32,
+        mut y1: i32,
+        mut x2: i32,
+        mut y2: i32,
+        mut x3: i32,
+        mut y3: i32,
+        color: impl Into<Color>,
+    ) {
+        use std::mem::swap;
+        let raw_color = u32::from(color.into());
+
+        // Sort points vertically
+        if y2 > y3 {
+            swap(&mut x2, &mut x3);
+            swap(&mut y2, &mut y3);
+        }
+
+        if y1 > y2 {
+            swap(&mut x1, &mut x2);
+            swap(&mut y1, &mut y2);
+        }
+
+        if y2 > y3 {
+            swap(&mut x2, &mut x3);
+            swap(&mut y2, &mut y3);
+        }
+
+        let dx_far = f64::from(x3 - x1) / f64::from(y3 - y1 + 1);
+        let dx_upper = f64::from(x2 - x1) / f64::from(y2 - y1 + 1);
+        let dx_low = f64::from(x3 - x2) / f64::from(y3 - y2 + 1);
+        let mut xf = f64::from(x1);
+        let mut xt = xf + dx_upper;
+
+        for y in y1..=y3.min(self.clamped_height - 1) {
+            if y >= 0 {
+                let offset = y as usize * self.width;
+                {
+                    let from_x = xf.max(0.0) as usize;
+                    let to_x = if xt < f64::from(self.clamped_width) {
+                        xt as usize
+                    } else {
+                        (self.clamped_width - 1) as usize
+                    };
+
+                    let range = offset + from_x..=offset + to_x;
+
+                    if !range.is_empty() {
+                        self.buffer[range].fill(raw_color);
+                    }
+                }
+
+                {
+                    let from_x = xt.max(0.0) as usize;
+                    let to_x = if xf < f64::from(self.clamped_width) {
+                        xf as usize
+                    } else {
+                        self.clamped_width as usize - 1
+                    };
+
+                    let range = offset + from_x..=offset + to_x;
+                    if !range.is_empty() {
+                        self.buffer[range].fill(raw_color);
+                    }
+                }
+            }
+
+            xf += dx_far;
+            if y < y2 {
+                xt += dx_upper;
+            } else {
+                xt += dx_low;
+            }
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn outline_triangle(
+        &mut self,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        x3: i32,
+        y3: i32,
+        color: impl Into<Color>,
+    ) {
+        let raw_color = u32::from(color.into());
+
+        self.line(x1, y1, x2, y2, raw_color);
+        self.line(x1, y1, x3, y3, raw_color);
+        self.line(x2, y2, x3, y3, raw_color);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn thick_outline_triangle(
+        &mut self,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        x3: i32,
+        y3: i32,
+        thickness: i32,
+        color: impl Into<Color>,
+    ) {
+        if thickness < 0 {
+            return;
+        } else if thickness == 1 {
+            self.outline_triangle(x1, y1, x2, y2, x3, y3, color);
+            return;
+        }
+
+        let raw_color = u32::from(color.into());
+
+        let half_thickness = thickness / 2;
+
+        self.thick_line(x1, y1, x2, y2, thickness, raw_color);
+        self.thick_line(x1, y1, x3, y3, thickness, raw_color);
+        self.thick_line(x2, y2, x3, y3, thickness, raw_color);
+        self.fill_circle(x1, y1, half_thickness, raw_color);
+        self.fill_circle(x2, y2, half_thickness, raw_color);
+        self.fill_circle(x3, y3, half_thickness, raw_color);
     }
 
     /// Renders a horizontal line. Should be preferred when explicitly drawing horizontal lines.
@@ -766,7 +905,6 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     /// Renders a line. Should be preferred when mostly drawing axis-aligned lines.
     /// If it is not very likely you'll draw a lot of axis-aligned lines prefer [`line`](struct.Canvas.html#method.line) instead.
     /// ``` rust
@@ -796,7 +934,71 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    #[allow(clippy::similar_names, clippy::cast_possible_truncation)]
+    pub fn thick_line(
+        &mut self,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        thickness: i32,
+        color: impl Into<Color>,
+    ) {
+        if thickness < 0 {
+            return;
+        } else if thickness == 1 {
+            self.line(x1, y1, x2, y2, color);
+            return;
+        }
+
+        let raw_color = u32::from(color.into());
+
+        let dx = f64::from(x2 - x1);
+        let dy = f64::from(y2 - y1);
+        let length = (dx * dx + dy * dy).sqrt();
+
+        let half_thickness = f64::from(thickness) * 0.5;
+
+        let px = ((-dy / length) * half_thickness) as i32;
+        let py = ((dx / length) * half_thickness) as i32;
+
+        let v1x = x1 + px;
+        let v1y = y1 + py;
+
+        let v2x = x1 - px;
+        let v2y = y1 - py;
+
+        let v3x = x2 + px;
+        let v3y = y2 + py;
+
+        let v4x = x2 - px;
+        let v4y = y2 - py;
+
+        self.fill_triangle(v1x, v1y, v2x, v2y, v3x, v3y, raw_color);
+        self.fill_triangle(v2x, v2y, v4x, v4y, v3x, v3y, raw_color);
+    }
+
+    #[inline]
+    pub fn thick_line_maybe_axis_aligned(
+        &mut self,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        thickness: i32,
+        color: impl Into<Color>,
+    ) {
+        if x1 == x2 {
+            self.thick_vline(x1, y1, y2, thickness, color);
+        } else if y1 == y2 {
+            self.thick_hline(y1, x1, x2, thickness, color);
+        } else {
+            self.thick_line(x1, y1, x2, y2, thickness, color);
+        }
+    }
+
     /// Starts a flood fill from supplied coordinate filling the area with the color provided.
+    #[allow(clippy::cast_sign_loss)]
     pub fn flood_fill(&mut self, x: i32, y: i32, color: impl Into<Color>) {
         if 0 <= x && x < self.clamped_width && 0 <= y && y < self.clamped_height {
             let raw_color = u32::from(color.into());
