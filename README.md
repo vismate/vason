@@ -3,7 +3,8 @@
 **WARNING: This crate is in very early stages. Anything can change anytime. Use at your own risk.**
 
 This crate enables you to render simple 2D shapes to a buffer of pixels.
-After creating a Canvas, you have access to methods to fill in, or draw the outline of shapes.
+After creating a Canvas from a buffer, you have access to methods to fill in, or draw the outline of shapes.
+This crate has **no runtime dependencies.**
 
 A ppm module is included that lets you save your buffer as an image (that can be displayed by some major image viewers).
 The crate also works well together with libraries such as [minifb](https://crates.io/crates/minifb), thus you can even use it for small games / demos / visualizations.
@@ -16,10 +17,10 @@ The crate also works well together with libraries such as [minifb](https://crate
   - [x] line, hline, vline, thick_hline, thick_vline
 - [x] Save buffer to a primitive image format (ppm)
 - [ ] more shapes:
-  - [ ] fill_triangle, outline_triangle, thick_outline_triangle
+  - [x] fill_triangle, outline_triangle, thick_outline_triangle
   - [x] thick_outline_circle
   - [ ] thick_outline_ellipse
-  - [ ] thick_line
+  - [x] thick_line
   - [ ] bezier_curve
 - [x] flood fill
 - [ ] copy regions over from other buffer (sprites)
