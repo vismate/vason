@@ -291,7 +291,7 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// Fills a circle shaped region in this [`Canvas`]. The radius must be positive, but uses the absoulte value otherwise.
+    /// Fills a circle shaped region in this [`Canvas`]. The radius must be positive.
     /// ``` rust
     /// use vason::{Canvas, Color};
     /// let mut buffer = [0u32; 256];
@@ -343,7 +343,7 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// Renders the outline of a circle shaped region in this [`Canvas`]. The radius must be positive, but uses the absoulte value otherwise.
+    /// Renders the outline of a circle shaped region in this [`Canvas`]. The radius must be positive,
     /// ``` rust
     /// use vason::{Canvas, Color};
     /// let mut buffer = [0u32; 256];
@@ -409,7 +409,7 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// Renders the outline of a circle shaped region with a given thickness in this [`Canvas`]. The radius must be positive, but uses the absoulte value otherwise.
+    /// Renders the outline of a circle shaped region with a given thickness in this [`Canvas`]. The radius must be positive.
     /// The stroke witdth grows symmetrically (inwards and outwards), that is the supplied radius will be the center of the stroke.
     /// ``` rust
     /// use vason::{Canvas, Color};
@@ -477,7 +477,7 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// Fills an ellipse shaped region in this [`Canvas`]. The radii must be positive, but uses the absoulte value otherwise.
+    /// Fills an ellipse shaped region in this [`Canvas`]. The radii must be positive.
     /// ``` rust
     /// use vason::{Canvas, Color};
     /// let mut buffer = [0u32; 256];
@@ -554,7 +554,7 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// Renders the outline of an ellipse shaped region in this [`Canvas`]. The radii must be positive, but uses the absoulte value otherwise.
+    /// Renders the outline of an ellipse shaped region in this [`Canvas`]. The radii must be positive.
     /// ``` rust
     /// use vason::{Canvas, Color};
     /// let mut buffer = [0u32; 256];
@@ -645,6 +645,13 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    /// Renders a triangle in this [`Canvas`].
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
+    /// canvas.fill_triangle(1, 0, 12, 0, 13, 15, Color::RED);
+    /// ```
     #[allow(
         clippy::too_many_arguments,
         clippy::cast_sign_loss,
@@ -727,6 +734,13 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    /// Renders the outline of a triangle in this [`Canvas`].
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
+    /// canvas.outline_triangle(1, 0, 12, 0, 13, 15, Color::RED);
+    /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn outline_triangle(
         &mut self,
@@ -745,6 +759,13 @@ impl<'a> Canvas<'a> {
         self.line(x2, y2, x3, y3, raw_color);
     }
 
+    /// Renders the outline of a triangle with thickness in this [`Canvas`]. Joints are covered by rounded ends (circles).
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
+    /// canvas.thick_outline_triangle(1, 0, 12, 0, 13, 15, 3, Color::RED);
+    /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn thick_outline_triangle(
         &mut self,
@@ -869,7 +890,7 @@ impl<'a> Canvas<'a> {
     /// use vason::{Canvas, Color};
     /// let mut buffer = [0u32; 256];
     /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
-    /// canvas.line(10,2,10,12, Color::RED);
+    /// canvas.line(10, 2, 10, 12, Color::RED);
     /// ```
     pub fn line(&mut self, mut x1: i32, mut y1: i32, x2: i32, y2: i32, color: impl Into<Color>) {
         let raw_color = u32::from(color.into());
@@ -912,7 +933,7 @@ impl<'a> Canvas<'a> {
     /// let mut buffer = [0u32; 256];
     /// let mut canvas = Canvas::new(&mut buffer, 16,16);
     /// // axis aligned
-    /// canvas.line_maybe_axis_aligned(10,2,10,12, Color::RED);
+    /// canvas.line_maybe_axis_aligned(10, 2, 10, 12, Color::RED);
     /// // not axis aligned
     /// canvas.line_maybe_axis_aligned(12, 4, 5, 7, Color::BLUE);
     /// ```
@@ -934,6 +955,14 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    /// Renders a line with thickness. Should be preferred when mostly drawing non axis-aligned lines.
+    /// If there is a substantial chance of drawing axis-aligned (hline or vline) consider using [`thick_line_maybe_axis_aligned`](struct.Canvas.html#method.thick_line_maybe_axis_aligned) instead
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16, 16);
+    /// canvas.thick_line(10, 2, 10, 12, 4, Color::RED);
+    /// ```
     #[allow(clippy::similar_names, clippy::cast_possible_truncation)]
     pub fn thick_line(
         &mut self,
@@ -978,6 +1007,17 @@ impl<'a> Canvas<'a> {
         self.fill_triangle(v2x, v2y, v4x, v4y, v3x, v3y, raw_color);
     }
 
+    /// Renders a line with thickness. Should be preferred when mostly drawing axis-aligned lines.
+    /// If it is not very likely you'll draw a lot of axis-aligned lines prefer [`thick_line`](struct.Canvas.html#method.thick_line) instead.
+    /// ``` rust
+    /// use vason::{Canvas, Color};
+    /// let mut buffer = [0u32; 256];
+    /// let mut canvas = Canvas::new(&mut buffer, 16,16);
+    /// // axis aligned
+    /// canvas.thick_line_maybe_axis_aligned(10, 2, 10, 12, 3, Color::RED);
+    /// // not axis aligned
+    /// canvas.thick_line_maybe_axis_aligned(12, 4, 5, 7, 4, Color::BLUE);
+    /// ```
     #[inline]
     pub fn thick_line_maybe_axis_aligned(
         &mut self,
