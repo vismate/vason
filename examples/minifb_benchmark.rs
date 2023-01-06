@@ -6,7 +6,8 @@ const HEIGHT: usize = 768;
 
 //TODO: Create a better example/benchmark
 fn main() {
-    let mut canvas = Canvas::new(WIDTH, HEIGHT);
+    let mut buffer = vec![0u32; WIDTH * HEIGHT];
+    let mut canvas = Canvas::new(&mut buffer, WIDTH, HEIGHT);
 
     let mut window = Window::new(
         "Test - ESC to exit",

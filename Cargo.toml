@@ -1,13 +1,13 @@
 [package]
 name = "vason"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 authors = ["vismate"]
 license = "MIT OR Apache-2.0"
 description = "Basic 2D rasterizer written in rust that renders to a buffer."
 homepage =  "https://github.com/vismate/vason/"
 repository =  "https://github.com/vismate/vason/"
-rust-version = "1.58.1"
+rust-version = "1.56.1"
 keywords = ["graphics", "rasterizing", "framebuffer", "rendering", "drawing"]
 categories = ["graphics"]
 

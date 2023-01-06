@@ -1,3 +1,20 @@
+//! The ppm module allows the user to save a canvas or a plain buffer to a file (or write it to anything that implements Write)
+//! The ppm file format is one of the most simple ones. That is why it's included here. Not all image viewers support the format
+//! but the major ones usually do. (so do web browsers)
+//! # Example
+//! ```rust
+//! use vason::{Canvas, Color, ppm::encode_canvas};
+//! use std::fs::File;
+//!
+//! let mut buffer = vec![0u32; 64*64];
+//! let mut canvas = Canvas::new(&mut buffer, 64, 64);
+//! canvas.clear(Color::BLUE);
+//! // ...
+//!
+//! let mut file = File::create("canvas.ppm").expect("could not create file");
+//! encode_canvas(&canvas, &mut file).expect("could not write image to file");
+//! ```
+
 use crate::Canvas;
 use std::io::{Result, Write};
 
@@ -18,7 +35,8 @@ pub fn encode_canvas(canvas: &Canvas, w: &mut dyn Write) -> Result<()> {
 ///
 /// This function will return an error if there was an i/o error whilest writing.
 pub fn encode_buffer(buffer: &[u32], width: usize, height: usize, w: &mut dyn Write) -> Result<()> {
-    writeln!(w, "P6 {width} {height} 255")?;
+    #[allow(clippy::uninlined_format_args)]
+    writeln!(w, "P6 {} {} 255", width, height)?;
 
     // instead of calling write on all pixels, we create chunks.
     // this significantly increases performance even without the use of BufWriters.
