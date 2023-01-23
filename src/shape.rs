@@ -70,6 +70,7 @@ impl Rectangle {
     impl_shape!();
 }
 
+#[derive(Debug)]
 pub struct Circle {
     pub x: i32,
     pub y: i32,
@@ -95,6 +96,7 @@ impl Circle {
     impl_shape!();
 }
 
+#[derive(Debug)]
 pub struct Line {
     pub x1: i32,
     pub y1: i32,
@@ -130,6 +132,7 @@ impl Line {
     }
 }
 
+#[derive(Debug)]
 pub struct Ellipse {
     pub x: i32,
     pub y: i32,
@@ -157,6 +160,7 @@ impl Ellipse {
     impl_shape!();
 }
 
+#[derive(Debug)]
 pub struct Triangle {
     pub x1: i32,
     pub y1: i32,
