@@ -1,4 +1,4 @@
-use crate::{Color, Pen};
+use crate::{shape::Draw, Color, Pen};
 
 pub struct Canvas<'a> {
     buffer: &'a mut [u32],
@@ -1069,6 +1069,11 @@ impl<'a> Canvas<'a> {
         }
 
         self.flood_fill_core(x, y, seed_color, raw_color);
+    }
+
+    #[inline]
+    pub fn draw(&mut self, drawable: &impl Draw) {
+        drawable.draw_to(self);
     }
 
     fn flood_fill_core(&mut self, mut x: usize, mut y: usize, seed_color: u32, raw_color: u32) {
