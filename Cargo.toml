@@ -17,3 +17,8 @@ exclude = [".github/*"]
 
 [dev-dependencies]
 minifb = "0.23.0"
+
+[features]
+default = ["pen-api", "shape-api"]
+pen-api = []
+shape-api = []

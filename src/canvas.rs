@@ -1,4 +1,10 @@
-use crate::{shape::Draw, Color, Pen};
+use crate::Color;
+
+#[cfg(feature = "pen-api")]
+use crate::pen::Pen;
+
+#[cfg(feature = "shape-api")]
+use crate::shape::Draw;
 
 pub struct Canvas<'a> {
     buffer: &'a mut [u32],
@@ -49,9 +55,16 @@ impl<'a> Canvas<'a> {
         self.buffer
     }
 
+    #[cfg(feature = "pen-api")]
     #[must_use]
     pub fn pen(&mut self) -> Pen<'_, 'a> {
         Pen::new(self)
+    }
+
+    #[cfg(feature = "shape-api")]
+    #[inline]
+    pub fn draw(&mut self, drawable: &impl Draw) {
+        drawable.draw_to(self);
     }
 
     /// Clear the entire buffer with supplied color.
@@ -1069,11 +1082,6 @@ impl<'a> Canvas<'a> {
         }
 
         self.flood_fill_core(x, y, seed_color, raw_color);
-    }
-
-    #[inline]
-    pub fn draw(&mut self, drawable: &impl Draw) {
-        drawable.draw_to(self);
     }
 
     fn flood_fill_core(&mut self, mut x: usize, mut y: usize, seed_color: u32, raw_color: u32) {
