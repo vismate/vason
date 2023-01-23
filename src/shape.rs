@@ -1,7 +1,7 @@
 //! The Shape API allows you to write cleaner and more readable code in some cases.
 //! # Example
 //! ```rust
-//! use vason::{Canvas, Color, shape::Circle);
+//! use vason::{Canvas, Color, shape::Circle};
 //! let mut buffer = vec![0u32; 128*128];
 //! let mut canvas = Canvas::new(&mut buffer, 128, 128);
 //!
