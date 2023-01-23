@@ -27,7 +27,7 @@ The crate also works well together with libraries such as [minifb](https://crate
 - [x] flood fill
 - [ ] copy regions over from other buffer (sprites)
 - [x] Pen-API: ["Turtle Geometry"](https://people.eecs.berkeley.edu/~bh/v1ch10/turtle.html)
-- [ ] Descriptor-API: A higher level helper API that can make your code more readable (but a tad less efficient).
+- [x] Shape-API: A higher level helper API that can make your code more readable (but a tad less efficient).
 - [ ] alpha compositing (transparency)
 - [ ] built-in monospaced font rendering
 - further optimizations...
