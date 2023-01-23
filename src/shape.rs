@@ -1,23 +1,46 @@
+//! The Shape API allows you to write cleaner and more readable code in some cases.
+//! # Example
+//! ```rust
+//! use vason::{Canvas, Color, shape::Circle);
+//! let mut buffer = vec![0u32; 128*128];
+//! let mut canvas = Canvas::new(&mut buffer, 128, 128);
+//!
+//! let mut circle = Circle::new(64, 64, 32);
+//! circle.set_fill_color(Some(Color::RED))
+//!       .set_outline_color(Some(Color::RED))
+//!       .set_outline_thickness(3);
+//!
+//! // draw the circle
+//! canvas.draw(&circle);
+//! ```
+
 use crate::{Canvas, Color};
 
+/// Helper trait to draw to a canvas.
 pub trait Draw {
+    /// Draw self to supplied canvas.
     fn draw_to(&self, canvas: &mut Canvas);
 }
 
 macro_rules! impl_shape {
     () => {
+        /// Set the fill color of the shape. Use None if filling the shape is not desired.
         #[inline]
         pub fn set_fill_color(&mut self, color: Option<impl Into<Color>>) -> &mut Self {
             self.fill_color = color.map(|c| u32::from(c.into()));
             self
         }
 
+        /// Set the outline color of the shape. Use None if drawing an outline is not desired.
+        /// Note, that the outline both extrudes and intrudes from the shape's outline by half the thickness.
         #[inline]
         pub fn set_outline_color(&mut self, color: Option<impl Into<Color>>) -> &mut Self {
             self.outline_color = color.map(|c| u32::from(c.into()));
             self
         }
 
+        /// Set the outline thickness of the shape.
+        /// Note, that the outline both extrudes and intrudes from the shape's outline by half the thickness.
         #[inline]
         pub fn set_outline_thickness(&mut self, thickness: i32) -> &mut Self {
             self.outline_thickness = thickness;
@@ -38,6 +61,7 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
+    /// Creates a new [`Rectangle`] from it's location, width and height.
     #[must_use]
     pub fn new(x: i32, y: i32, width: i32, height: i32) -> Self {
         Self {
@@ -51,6 +75,7 @@ impl Rectangle {
         }
     }
 
+    /// Creates a new [`Rectangle`] from two points.
     #[must_use]
     pub fn from_points(x1: i32, y1: i32, x2: i32, y2: i32) -> Self {
         let (x, width) = if x1 > x2 {
@@ -81,6 +106,7 @@ pub struct Circle {
 }
 
 impl Circle {
+    /// Creates a new [`Circle`] from it's location and radius.
     #[must_use]
     pub fn new(x: i32, y: i32, radius: i32) -> Self {
         Self {
@@ -107,6 +133,7 @@ pub struct Line {
 }
 
 impl Line {
+    /// Creates a new [`Line`] from it's start and end point.
     #[must_use]
     pub fn new(x1: i32, y1: i32, x2: i32, y2: i32) -> Self {
         Self {
@@ -119,12 +146,14 @@ impl Line {
         }
     }
 
+    /// Set the fill color of the shape. Use None if filling the shape is not desired.
     #[inline]
     pub fn set_fill_color(&mut self, color: Option<impl Into<Color>>) -> &mut Self {
         self.fill_color = color.map(|c| u32::from(c.into()));
         self
     }
 
+    /// Set the thickness of the line.
     #[inline]
     pub fn set_thickness(&mut self, thickness: i32) -> &mut Self {
         self.thickness = thickness;
@@ -144,6 +173,7 @@ pub struct Ellipse {
 }
 
 impl Ellipse {
+    /// Creates a new [`Ellipse`] from it's location and radii.
     #[must_use]
     pub fn new(x: i32, y: i32, a: i32, b: i32) -> Self {
         Self {
@@ -174,6 +204,7 @@ pub struct Triangle {
 }
 
 impl Triangle {
+    /// Creates a new [`Triangle`] from three points.
     #[must_use]
     pub fn new(x1: i32, y1: i32, x2: i32, y2: i32, x3: i32, y3: i32) -> Self {
         Self {
