@@ -286,8 +286,14 @@ impl Draw for Ellipse {
         }
 
         if let Some(outline_color) = self.outline_color {
-            // TODO: once thick_outline_ellipse is implemented modify this
-            canvas.outline_ellipse(self.x, self.y, self.a, self.b, outline_color);
+            canvas.thick_outline_ellipse(
+                self.x,
+                self.y,
+                self.a,
+                self.b,
+                self.outline_thickness,
+                outline_color,
+            );
         }
     }
 }
