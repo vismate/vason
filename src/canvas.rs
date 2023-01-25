@@ -439,10 +439,10 @@ impl<'a> Canvas<'a> {
         thickness: i32,
         color: impl Into<Color>,
     ) {
-        if thickness <= 0 || r < 1 {
-            return;
-        } else if thickness == 1 {
+        if thickness == 1 {
             self.outline_circle(x, y, r, color);
+            return;
+        } else if thickness <= 0 || r < 1 {
             return;
         }
 
@@ -655,6 +655,224 @@ impl<'a> Canvas<'a> {
                     }
                 }
             }
+        }
+    }
+
+    #[allow(clippy::too_many_lines, clippy::similar_names)]
+    pub fn thick_outline_ellipse(
+        &mut self,
+        x: i32,
+        y: i32,
+        a: i32,
+        b: i32,
+        thickness: i32,
+        color: impl Into<Color>,
+    ) {
+        // source: https://stackoverflow.com/questions/55980376/midpoint-thick-ellipse-drawing-algorithm
+
+        // TODO: inline hline calls
+        // TODO: explore using larger integers to awoid overflow (like in outline_ellipse)
+        // TODO: organize the code better, replace macros with functions perhaps
+        // TODO: apply fix that makes horizontal and vertical thickness more uniform (after inlining hline calls)
+
+        if thickness == 1 {
+            self.outline_ellipse(x, y, a, b, color);
+            return;
+        } else if a < 1 || b < 1 || thickness <= 0 {
+            return;
+        }
+
+        let raw_color = u32::from(color.into());
+
+        let half_thickness = thickness / 2;
+        let (inner_a, inner_b) = (a - half_thickness, b - half_thickness);
+        let (outer_a, outer_b) = (a + half_thickness, b + half_thickness);
+
+        let (mut px, mut py) = (outer_a, 0);
+
+        let (mut outer_dx, mut outer_dy) = (2 * outer_b * outer_b * px, 2 * outer_a * outer_a * py);
+
+        macro_rules! outer_err_yx {
+            () => {
+                outer_a * outer_a - outer_b * outer_b * outer_a + (outer_b * outer_b) / 4
+            };
+        }
+
+        macro_rules! outer_err_xy {
+            () => {
+                outer_a * outer_a * (py * py + py) + outer_b * outer_b * (px - 1) * (px - 1)
+                    - outer_b * outer_b * outer_a * outer_a
+            };
+        }
+
+        let mut inner_x = inner_a;
+        let (mut inner_dx, mut inner_dy) =
+            (2 * inner_b * inner_b * inner_x, 2 * inner_a * inner_a * py);
+
+        macro_rules! inner_err_yx {
+            () => {
+                inner_a * inner_a - inner_b * inner_b * inner_a + (inner_b * inner_b) / 4
+            };
+        }
+
+        macro_rules! inner_err_xy {
+            () => {
+                inner_a * inner_a * (py * py + py)
+                    + inner_b * inner_b * (inner_x - 1) * (inner_x - 1)
+                    - inner_b * inner_b * inner_a * inner_a
+            };
+        }
+
+        let mut outer_err = outer_err_yx!();
+        let mut inner_err = inner_err_yx!();
+
+        macro_rules! outer_step_yx {
+            () => {
+                py += 1;
+
+                if outer_err < 0 {
+                    outer_dy += 2 * outer_a * outer_a;
+                    outer_err += outer_dy + outer_a * outer_a;
+                } else {
+                    px -= 1;
+                    outer_dy += 2 * outer_a * outer_a;
+                    outer_dx -= 2 * outer_b * outer_b;
+                    outer_err += outer_dy - outer_dx + outer_a * outer_a;
+                }
+            };
+        }
+
+        macro_rules! inner_step_yx {
+            () => {
+                if inner_err < 0 {
+                    inner_dy += 2 * inner_a * inner_a;
+                    inner_err += inner_dy + inner_a * inner_a;
+                } else {
+                    inner_x -= 1;
+                    inner_dy += 2 * inner_a * inner_a;
+                    inner_dx -= 2 * inner_b * inner_b;
+                    inner_err += inner_dy - inner_dx + inner_a * inner_a;
+                }
+            };
+        }
+
+        macro_rules! outer_step_xy {
+            () => {
+                loop {
+                    px -= 1;
+                    if px < 0 {
+                        break;
+                    }
+
+                    if outer_err > 0 {
+                        outer_dx -= 2 * outer_b * outer_b;
+                        outer_err += outer_b * outer_b - outer_dx;
+                    } else {
+                        py += 1;
+                        outer_dy += 2 * outer_a * outer_a;
+                        outer_dx -= 2 * outer_b * outer_b;
+                        outer_err += outer_dy - outer_dx + outer_b * outer_b;
+                        break;
+                    }
+                }
+            };
+        }
+
+        macro_rules! inner_step_xy {
+            () => {
+                loop {
+                    inner_x -= 1;
+                    if inner_x < 0 {
+                        break;
+                    }
+
+                    if inner_err > 0 {
+                        inner_dx -= 2 * inner_b * inner_b;
+                        inner_err += inner_b * inner_b - inner_dx;
+                    } else {
+                        inner_dy += 2 * inner_a * inner_a;
+                        inner_dx -= 2 * inner_b * inner_b;
+                        inner_err += inner_dy - inner_dx + inner_b * inner_b;
+                        break;
+                    }
+                }
+            };
+        }
+
+        // 1st phase
+
+        while outer_dy < outer_dx && inner_dy < inner_dx {
+            // TODO: manually inline hline calls
+            self.hline(y + py, x - px, x - inner_x, raw_color);
+            self.hline(y + py, x + px, x + inner_x, raw_color);
+            self.hline(y - py, x - px, x - inner_x, raw_color);
+            self.hline(y - py, x + px, x + inner_x, raw_color);
+
+            outer_step_yx!();
+            inner_step_yx!();
+        }
+
+        // 2nd phase
+
+        if outer_dy < outer_dx {
+            inner_err = inner_err_xy!();
+
+            while outer_dy < outer_dx && inner_x >= 0 {
+                self.hline(y + py, x - px, x - inner_x, raw_color);
+                self.hline(y + py, x + px, x + inner_x, raw_color);
+                self.hline(y - py, x - px, x - inner_x, raw_color);
+                self.hline(y - py, x + px, x + inner_x, raw_color);
+
+                outer_step_yx!();
+                inner_step_xy!();
+            }
+
+            while outer_dy < outer_dx {
+                self.hline(y + py, x - px, x + px, raw_color);
+                self.hline(y - py, x - px, x + px, raw_color);
+                outer_step_yx!();
+            }
+        } else {
+            outer_err = outer_err_xy!();
+
+            while inner_dy < inner_dx {
+                let (px_, py_) = (px, py);
+
+                outer_step_xy!();
+                inner_step_yx!();
+
+                let inner_x_ = x.min(inner_x);
+                self.hline(y + py_, x - px_, x - inner_x_, raw_color);
+                self.hline(y + py_, x + px_, x + inner_x_, raw_color);
+                self.hline(y - py_, x - px_, x - inner_x_, raw_color);
+                self.hline(y - py_, x + px_, x + inner_x_, raw_color);
+            }
+        }
+
+        // 3rd phase
+
+        outer_err = outer_err_xy!();
+        inner_err = inner_err_xy!();
+
+        while inner_x >= 0 {
+            let (px_, py_) = (px, py);
+            outer_step_xy!();
+            let inner_x_ = x.min(inner_x);
+
+            self.hline(y + py_, x - px_, x - inner_x_, raw_color);
+            self.hline(y + py_, x + px_, x + inner_x_, raw_color);
+            self.hline(y - py_, x - px_, x - inner_x_, raw_color);
+            self.hline(y - py_, x + px_, x + inner_x_, raw_color);
+
+            inner_step_xy!();
+        }
+
+        // 4th phase
+
+        while px >= 0 {
+            self.hline(y + py, x - px, x + px + 1, raw_color);
+            self.hline(y - py, x - px, x + px + 1, raw_color);
+            outer_step_xy!();
         }
     }
 

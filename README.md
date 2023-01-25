@@ -21,7 +21,7 @@ The crate also works well together with libraries such as [minifb](https://crate
 - [ ] more shapes:
   - [x] fill_triangle, outline_triangle, thick_outline_triangle
   - [x] thick_outline_circle
-  - [ ] thick_outline_ellipse
+  - [x] thick_outline_ellipse
   - [x] thick_line
   - [ ] bezier_curve
 - [x] flood fill
