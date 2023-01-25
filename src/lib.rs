@@ -1,10 +1,11 @@
 #![doc = include_str!("../README.md")]
 pub mod canvas;
 pub mod color;
-pub mod ppm;
 
 #[cfg(feature = "pen-api")]
 pub mod pen;
+#[cfg(feature = "ppm")]
+pub mod ppm;
 #[cfg(feature = "pen-api")]
 pub use pen::Pen;
 
